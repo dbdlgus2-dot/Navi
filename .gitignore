@@ -10,3 +10,8 @@ yarn-error.log*
 
 # mac
 .DS_Store
+
+# ignore
+node-api/node_modules/
+node-api/.env
+.DS_Store
