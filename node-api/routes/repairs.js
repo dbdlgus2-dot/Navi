@@ -35,7 +35,7 @@ function toYMD(v) {
 router.get("/", async (req, res) => {
   try {
     const appUserId = req.session.user.id;
-    const { from, to, q, safe, free } = req.query;
+    const { from, to, q, safe, free, guide80 } = req.query;
 
     let sql = `
       select
@@ -55,20 +55,24 @@ router.get("/", async (req, res) => {
         repair_detail,
         car_name,
         note,
-        to_char(guide_date, 'YYYY-MM-DD') as guide_date
-        from repair_payments
-        where app_user_id = $1
+         to_char(guide_date, 'YYYY-MM-DD') as guide_date,
+        guide_done,
+        guide_done_at,
+
+        -- ✅ 90일 도래하면 true (안심회원만)
+        (
+          safe_member = true
+          and current_date >= (coalesce(guide_date, repair_date) + interval '90 days')::date
+        ) as guide_due
+
+      from repair_payments
+      where app_user_id = $1
     `;
+
     const params = [appUserId];
 
-    if (from) {
-      params.push(from);
-      sql += ` and repair_date >= $${params.length}::date`;
-    }
-    if (to) {
-      params.push(to);
-      sql += ` and repair_date <= $${params.length}::date`;
-    }
+    if (from) { params.push(from); sql += ` and repair_date >= $${params.length}::date`; }
+    if (to)   { params.push(to);   sql += ` and repair_date <= $${params.length}::date`; }
 
     if (q) {
       params.push(`%${q}%`);
@@ -78,27 +82,54 @@ router.get("/", async (req, res) => {
     if (safe === "1") sql += ` and safe_member = true`;
     if (free === "1") sql += ` and free_repair = true`;
 
+    // ✅ “수리안내” 체크박스는 “안심회원 + 90일 도래”만 보기
+    if (guide80 === "1") {
+      sql += `
+        and safe_member = true
+        and current_date >= (coalesce(guide_date, repair_date) + interval '90 days')::date
+      `;
+    }
+
     sql += ` order by repair_date desc, id desc`;
 
     const r = await pool.query(sql, params);
 
-const out = r.rows.map(x => ({
-  id: Number(x.id),          // ✅ 이거 추가/수정 (핵심)
-  date: x.repair_date ? String(x.repair_date).slice(0,10) : "",
-  name: x.customer_name,
-  phone: x.customer_phone,
-  memo: x.card_company || "",
-  pay_card: Number(x.card_amount || 0),
-  pay_cash: Number(x.cash_amount || 0),
-  pay_bank: Number(x.bank_amount || 0),
-  product: x.product_name || "",
-  car: x.car_name || "",
-  desc: x.repair_detail || "",
-  note: x.note || "",
-  installment_mon: Number(x.installment_mon || 0),
-  guide_date: x.guide_date ? String(x.guide_date).slice(0,10) : "",
-  status: x.free_repair ? "무상" : (x.safe_member ? "안심회원" : "일반"),
-}));
+    const out = r.rows.map(x => {
+      const isSafe = x.safe_member === true || x.safe_member === "t";
+      const isFree = x.free_repair === true || x.free_repair === "t";
+      const guideDue = x.guide_due === true || x.guide_due === "t";
+
+      // ✅ “안내완료”는 이번 사이클에서만 표시 (90일 도래하면 다시 안내 가능 → 완료표시 숨김)
+      const guideDoneDisplay =
+        (x.guide_done === true || x.guide_done === "t") && !guideDue;
+
+      return {
+        id: Number(x.id),
+        date: String(x.repair_date).slice(0, 10),
+        name: x.customer_name,
+        phone: x.customer_phone,
+        memo: x.card_company || "",
+        installment_mon: Number(x.installment_mon || 0),
+        pay_card: Number(x.card_amount || 0),
+        pay_cash: Number(x.cash_amount || 0),
+        pay_bank: Number(x.bank_amount || 0),
+        product: x.product_name || "",
+        car: x.car_name || "",
+        desc: x.repair_detail || "",
+        note: x.note || "",
+
+        guide_date: x.guide_date ? String(x.guide_date).slice(0, 10) : "",
+
+        safe_member: isSafe,
+        free_repair: isFree,
+
+        guide_due: guideDue,
+        guide_done: guideDoneDisplay,          // ✅ 프론트는 이 값으로 “안내완료” 표시
+        guide_done_at: x.guide_done_at || null,
+
+        status: isFree ? "무상" : (isSafe ? "안심회원" : "일반"),
+      };
+    });
 
     res.json(out);
   } catch (e) {
@@ -132,7 +163,9 @@ router.post("/", async (req, res) => {
         car_name,
         repair_detail,
         note,
-        guide_date
+        guide_date,
+        guide_done,
+        guide_done_at
       ) VALUES (
         $1,   $2,
         $3::date,
@@ -141,29 +174,31 @@ router.post("/", async (req, res) => {
         $8,   $9,
         $10,  $11,  $12,
         $13,  $14,  $15,
-        $16,  $17::date
+        $16,
+        $3::date,    
+        false,        
+        null
       )
       RETURNING id;
     `;
 
     const values = [
-      appUserId,                         // $1
-      b.customer_id ?? null,             // $2 (없으면 null)
-      b.date,                            // $3
-      b.name,                            // $4
-      b.phone || null,                   // $5
-      b.card_company ?? b.memo ?? null,  // $6
-      Number(b.installment_mon ?? 0),    // $7
-      flags.safe_member,                 // $8
-      flags.free_repair,                 // $9
-      Number(b.pay_card ?? 0),           // $10
-      Number(b.pay_cash ?? 0),           // $11
-      Number(b.pay_bank ?? 0),           // $12
-      b.product || null,                 // $13
-      b.car || null,                     // $14
-      b.desc || null,                    // $15
-      b.note || null,                    // $16
-      b.guide_date || null,              // $17
+      appUserId,
+      b.customer_id ?? null,
+      b.date,
+      b.name,
+      b.phone || null,
+      b.card_company ?? b.memo ?? null,
+      Number(b.installment_mon ?? 0),
+      flags.safe_member,
+      flags.free_repair,
+      Number(b.pay_card ?? 0),
+      Number(b.pay_cash ?? 0),
+      Number(b.pay_bank ?? 0),
+      b.product || null,
+      b.car || null,
+      b.desc || null,
+      b.note || null,
     ];
 
     const r = await pool.query(sql, values);
@@ -201,7 +236,11 @@ router.put("/", async (req, res) => {
         car_name        = $15,
         repair_detail   = $16,
         note            = $17,
-        guide_date      = $18::date,
+
+        guide_date      = $4::date,   -- ✅ 수정(=수리 갱신)이면 다시 기준일 리셋
+        guide_done      = false,
+        guide_done_at   = null,
+
         updated_at      = now()
       WHERE id = $1
         AND app_user_id = $2
@@ -209,24 +248,23 @@ router.put("/", async (req, res) => {
     `;
 
     const values = [
-      Number(b.id),                      // $1  ✅ WHERE id
-      appUserId,                         // $2  ✅ 소유권 체크
-      b.customer_id ?? null,             // $3
-      b.date,                            // $4
-      b.name,                            // $5
-      b.phone || null,                   // $6
-      b.card_company ?? b.memo ?? null,  // $7
-      Number(b.installment_mon ?? 0),    // $8
-      flags.safe_member,                 // $9
-      flags.free_repair,                 // $10
-      Number(b.pay_card ?? 0),           // $11
-      Number(b.pay_cash ?? 0),           // $12
-      Number(b.pay_bank ?? 0),           // $13
-      b.product || null,                 // $14
-      b.car || null,                     // $15
-      b.desc || null,                    // $16
-      b.note || null,                    // $17
-      b.guide_date || null,              // $18
+      Number(b.id),
+      appUserId,
+      b.customer_id ?? null,
+      b.date,
+      b.name,
+      b.phone || null,
+      b.card_company ?? b.memo ?? null,
+      Number(b.installment_mon ?? 0),
+      flags.safe_member,
+      flags.free_repair,
+      Number(b.pay_card ?? 0),
+      Number(b.pay_cash ?? 0),
+      Number(b.pay_bank ?? 0),
+      b.product || null,
+      b.car || null,
+      b.desc || null,
+      b.note || null,
     ];
 
     const r = await pool.query(sql, values);
@@ -240,7 +278,6 @@ router.put("/", async (req, res) => {
     res.status(500).json({ message: e.message });
   }
 });
-
 // --------------------- DELETE ---------------------
 router.delete("/:id", async (req, res) => {
   try {
@@ -248,11 +285,14 @@ router.delete("/:id", async (req, res) => {
     const id = Number(req.params.id);
 
     const r = await pool.query(
-      `delete from repair_payments where id=$1 and app_user_id=$2`,
+      `delete from repair_payments where id = $1 and app_user_id = $2`,
       [id, appUserId]
     );
 
-    if (r.rowCount === 0) return res.status(403).json({ message: "권한 없음(내 데이터 아님)" });
+    if (r.rowCount === 0) {
+      return res.status(403).json({ message: "권한 없음" });
+    }
+
     res.json({ ok: true });
   } catch (e) {
     console.error("[DELETE /api/repairs ERROR]", e);
@@ -260,4 +300,31 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// --------------------- GUIDE DONE ---------------------
+router.post("/:id/guide-done", async (req, res) => {
+  try {
+    const appUserId = req.session.user.id;
+    const id = Number(req.params.id);
+
+    const r = await pool.query(
+      `
+      update repair_payments
+      set
+        guide_done = true,
+        guide_done_at = now(),
+        guide_date = current_date,   -- ✅ 누른 시점으로 기준일 리셋
+        updated_at = now()
+      where id = $1 and app_user_id = $2
+      returning id, guide_done, guide_date, guide_done_at
+      `,
+      [id, appUserId]
+    );
+
+    if (r.rowCount === 0) return res.status(403).json({ message: "권한 없음" });
+    res.json({ ok: true, row: r.rows[0] });
+  } catch (e) {
+    console.error("[POST /api/repairs/:id/guide-done ERROR]", e);
+    res.status(500).json({ message: e.message });
+  }
+});
 module.exports = router;
