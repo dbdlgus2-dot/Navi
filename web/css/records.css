@@ -130,3 +130,65 @@ body{
   background: #ef4444;
   color: #fff;
 }
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#btnExcel {
+  margin-left: auto; /* ✅ 오른쪽 끝으로 밀기 */
+}
+
+
+/* 날짜 셀: 고정폭 + 가운데정렬 + 한줄 */
+.table-records .td-date{
+  width: 120px;
+  min-width: 120px;
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 상태 셀: 가운데정렬 + 고정폭 */
+.table-records .td-type{
+  width: 110px;
+  min-width: 110px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 배지 공통: 글자 크게 + 패딩 + 둥글게 + 테두리 */
+.badge-pill{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+
+/* 색상: 너무 튀지 않게(배경 연하게) */
+.badge-safe{
+  background: #e8f5ff;
+  color: #0b63ce;
+  border-color: #b9dcff;
+}
+.badge-revisit{
+  background: #f2f4f7;
+  color: #344054;
+  border-color: #d0d5dd;
+}
+.badge-repair{
+  background: #fff4e6;
+  color: #b54708;
+  border-color: #ffd6ae;
+}
+.badge-new{
+  background: #ecfdf3;
+  color: #027a48;
+  border-color: #abefc6;
+}
