@@ -45,58 +45,40 @@ export function initDefaultDates(force = true) {
 }
 
 export function normalizeRow(r = {}) {
-  return {
-    // =====================
-    // 기본 식별 / 날짜
-    // =====================
-    id: Number(r.id),
-    date: toYMD(r.date || r.repair_date || ""),
+  const asBool = (v) => v === true || v === 1 || v === "1" || v === "t" || v === "true";
 
-    // =====================
-    // 고객 정보
-    // =====================
+  const ymd = (v) => {
+    if (!v) return "";
+    if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+  };
+
+  return {
+    id: Number(r.id),
+    date: ymd(r.date || r.repair_date),
+
     name: r.name || r.customer_name || "",
     phone: r.phone || r.customer_phone || "",
-    memo: r.memo || r.card_company || "",
 
-    // =====================
-    // 결제
-    // =====================
+    card_company: r.card_company || "",
+    installment_mon: Number(r.installment_mon ?? 0),
+
     pay_card: Number(r.pay_card ?? r.card_amount ?? 0),
     pay_cash: Number(r.pay_cash ?? r.cash_amount ?? 0),
     pay_bank: Number(r.pay_bank ?? r.bank_amount ?? 0),
-    installment_mon: Number(r.installment_mon ?? 0),
 
-    // =====================
-    // 제품 / 수리
-    // =====================
     product: r.product || r.product_name || "",
     car: r.car || r.car_name || "",
     desc: r.desc || r.repair_detail || "",
+    note: r.note || "",
 
-    // =====================
-    // 상태
-    // =====================
-    safe_member: r.safe_member === true || r.safe_member === "t",
-    free_repair: r.free_repair === true || r.free_repair === "t",
+    // ✅ 핵심: status 없애고 customer_type만
+    customer_type: r.customer_type || "신규",
 
-    status:
-      r.status ||
-      (r.free_repair
-        ? "무상"
-        : r.safe_member
-        ? "안심회원"
-        : "일반"),
-
-    // =====================
-    // 🔥 수리안내 핵심 필드 (절대 삭제하면 안 됨)
-    // =====================
-    guide_date: r.guide_date || "",
-    guide_done: r.guide_done === true || r.guide_done === "t",
-    guide_due: r.guide_due === true || r.guide_due === "t",
+    guide_date: ymd(r.guide_date),
+    guide_due: asBool(r.guide_due),
+    guide_done: asBool(r.guide_done),
     guide_done_at: r.guide_done_at || null,
-
-    card_company: r.card_company || r.memo || r.card_company || "",
-    installment_mon: Number(r.installment_mon ?? 0),
   };
 }
