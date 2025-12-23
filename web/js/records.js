@@ -132,6 +132,19 @@ function getPayloadFromModal() {
 }
 
 function bindEvents() {
+   // ✅ 체크박스 하나만 선택되도록
+    document.querySelectorAll(".filter-check").forEach(cb => {
+    cb.addEventListener("change", () => {
+      if (!cb.checked) return;
+
+      document.querySelectorAll(".filter-check").forEach(other => {
+        if (other !== cb) other.checked = false;
+      });
+
+      load(); // ← 체크 바뀌면 바로 조회까지
+    });
+  });
+
   $("#btnSearch")?.addEventListener("click", () => load());
   $("#dateFrom")?.addEventListener("change", () => load());
   $("#dateTo")?.addEventListener("change", () => load());
