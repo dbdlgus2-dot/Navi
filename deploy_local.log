@@ -9,13 +9,9 @@
 + echo '==[1/6] 변경사항 확인'
 ==[1/6] 변경사항 확인
 + git status -sb
-## main...origin/main
-?? deploy_local.log
+## main...origin/main [ahead 1]
+ M deploy_local.log
 + git diff --quiet
-+ git diff --cached --quiet
-+ echo '변경사항 없음. 서버 배포만 진행합니다.'
-변경사항 없음. 서버 배포만 진행합니다.
-+ echo '==[5/6] 서버에서 배포 스크립트 실행'
-==[5/6] 서버에서 배포 스크립트 실행
-+ ssh -p 22 opc@161.33.167.129 'bash -lc '\''~/deploy.sh'\'''
-opc@161.33.167.129: Permission denied (publickey,gssapi-keyex,gssapi-with-mic).
++ echo '==[2/6] add'
+==[2/6] add
++ git add -A
