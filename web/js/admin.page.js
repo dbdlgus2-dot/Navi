@@ -68,7 +68,24 @@ function renderList(list) {
   ul.querySelector("button")?.classList.add("active");
 }
 
-function addDaysYMD(ymd, days) {
+function normalizeYMD(s) {
+  if (!s) return "";
+  s = String(s).trim();
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+
+  // "YYYY. MM. DD." 형태 대응
+  const m = s.match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.?$/);
+  if (m) {
+    const yy = m[1];
+    const mm = String(m[2]).padStart(2, "0");
+    const dd = String(m[3]).padStart(2, "0");
+    return `${yy}-${mm}-${dd}`;
+  }
+  return "";
+}
+
+function addDaysYMD(ymd, days = 30) {
   if (!ymd) return "";
   const [y, m, d] = ymd.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
@@ -79,11 +96,26 @@ function addDaysYMD(ymd, days) {
   return `${yy}-${mm}-${dd}`;
 }
 
+function bindAutoPaidUntilOnce() {
+  const payEl = document.querySelector("#adminLastPay");
+  const untilEl = document.querySelector("#adminPaidUntil");
+  if (!payEl || !untilEl) return;
+
+  if (payEl.dataset.bound === "1") return;
+  payEl.dataset.bound = "1";
+
+  payEl.addEventListener("change", () => {
+    const pay = payEl.value;        // YYYY-MM-DD
+    untilEl.value = pay ? addDaysYMD(pay, 30) : "";
+  });
+}
+
 function renderDetail(u) {
   const box = $("#adminDetail");
-  const joined = (u.joined_at || "").slice(0, 10);
-  const lastPay = (u.last_payment_at || "").slice(0, 10);
-  const paidUntil = (u.paid_until || "").slice(0, 10);
+
+  const joined = normalizeYMD((u.joined_at || "").slice(0, 10));
+  const lastPay = normalizeYMD((u.last_payment_at || "").slice(0, 10));
+  const paidUntil = normalizeYMD((u.paid_until || "").slice(0, 10));
 
   box.innerHTML = `
     <div class="p-3">
@@ -120,7 +152,7 @@ function renderDetail(u) {
         <div class="col-md-6">
           <label class="form-label">사용기간(만료일)</label>
           <input id="adminPaidUntil" type="date" class="form-control" value="${paidUntil}" />
-          <div class="small text-muted mt-1">규칙: 가입일 + 30일</div>
+          <div class="small text-muted mt-1">규칙: 시작일 + 30일(자동입력은 참고용, 직접 수정 가능)</div>
         </div>
 
         <div class="col-12">
@@ -139,12 +171,21 @@ function renderDetail(u) {
   $("#adminRole").value = u.role || "USER";
   $("#adminActive").value = String(!!u.is_active);
 
-  // ✅ 결제일 바꾸면 "가입일 기준 만료일(=가입일+30일)"로 자동 세팅하려면:
-  // 요구사항이 "결제일 기준"이 아니라 "가입일로부터 +30일" 이라서
-  // 결제일 변경과 무관하게 paid_until을 joined+30으로 맞추는게 맞음.
-  $("#adminLastPay")?.addEventListener("change", () => {
-    if (joined) $("#adminPaidUntil").value = addDaysYMD(joined, 30);
-  });
+  // ✅ 시작일 변경 시: 만료일이 비어있거나(처음) "자동으로만" 채워주기
+  const payEl = $("#adminLastPay");
+  const untilEl = $("#adminPaidUntil");
+
+  if (payEl && untilEl) {
+    payEl.addEventListener("change", () => {
+      const pay = payEl.value;
+      if (!pay) return;
+
+      // 만료일을 사용자가 이미 넣어놨으면 존중 (덮어쓰기 X)
+      if (!untilEl.value) {
+        untilEl.value = addDaysYMD(pay, 30);
+      }
+    });
+  }
 
   $("#btnSave").addEventListener("click", onSave);
   $("#btnReload").addEventListener("click", loadUsers);

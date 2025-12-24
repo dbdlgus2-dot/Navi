@@ -59,22 +59,24 @@ function bindModalEvents() {
 }
 
 function bindTableEvents() {
-  $("#tbody")?.addEventListener("click", async (e) => {
+  const tbody = $("#tbody");
+  if (!tbody) return;
+
+  // ✅ 이미 바인딩 됐으면 다시 안 붙임
+  if (tbody.dataset.bound === "1") return;
+  tbody.dataset.bound = "1";
+
+  tbody.addEventListener("click", async (e) => {
     const tr = e.target.closest("tr");
     if (!tr) return;
 
     const id = Number(tr.dataset.id);
-    const rows = getRows();
-    const row = rows.find((r) => r.id === id);
+    const row = getRows().find((r) => r.id === id);
     if (!row) return;
 
-    // 수리안내
     if (e.target.closest(".btn-guide")) {
-      const isSafe = row.customer_type === "안심회원";
-      if (!isSafe) return alert("수리안내는 안심회원만 가능합니다.");
-
-      const due = asBool(row.guide_due);
-      if (!due) return alert("아직 수리안내 기간이 아닙니다. (90일 이후 활성)");
+      if (row.customer_type !== "안심회원") return alert("수리안내는 안심회원만 가능합니다.");
+      if (!asBool(row.guide_due)) return alert("아직 수리안내 기간이 아닙니다. (90일 이후 활성)");
 
       if (!confirm("수리안내 처리(안내완료)로 변경할까?")) return;
 
@@ -88,22 +90,12 @@ function bindTableEvents() {
       return;
     }
 
-    // 수정
-    if (e.target.closest(".btn-edit")) {
-      setModal("edit", row);
-      return;
-    }
+    if (e.target.closest(".btn-edit")) return setModal("edit", row);
 
-    // 삭제
     if (e.target.closest(".btn-del")) {
       if (!confirm("삭제하시겠습니까")) return;
-      try {
-        await api.remove(id);
-        await load();
-      } catch (err) {
-        console.error(err);
-        alert(err.message || "삭제 실패");
-      }
+      await api.remove(id);
+      await load();
     }
   });
 }

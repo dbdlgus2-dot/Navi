@@ -2,7 +2,6 @@
 import { $, initDefaultDates, normalizeRow } from "./util.js";
 import { api } from "./api.js";
 import { renderRows, renderSums } from "./ui.js";
-import { bindEvents } from "./records.events.js"; 
 
 let rows = [];
 
