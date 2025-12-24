@@ -7,13 +7,13 @@ const session = require("express-session");
 
 const authRoutes = require("./routes/auth");
 const repairRoutes = require("./routes/repairs");
+const adminOnly = require("./middlewares/adminOnly");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = "0.0.0.0";
 
 const WEB_DIR = path.resolve(__dirname, "../web");
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -31,6 +31,8 @@ app.use(
   })
 );
 
+app.use("/api/admin", require("./routes/adminUsers"));
+app.use("/api/admin", require("./routes/admin")); 
 // 정적 서빙
 app.use(express.static(WEB_DIR));
 
@@ -39,6 +41,7 @@ app.get("/", (req, res) => res.sendFile(path.join(WEB_DIR, "login.html")));
 app.get("/login", (req, res) => res.sendFile(path.join(WEB_DIR, "login.html")));
 app.get("/register", (req, res) => res.sendFile(path.join(WEB_DIR, "register.html")));
 app.get("/records", (req, res) => res.sendFile(path.join(WEB_DIR, "records.html")));
+app.get("/admin", adminOnly, (req, res) => res.sendFile(path.join(WEB_DIR, "admin.html")));
 
 // API
 app.use("/api", authRoutes);
