@@ -18,7 +18,7 @@ router.get("/", async (req, res) => {
     const appUserId = req.session.user.id;
 
     // ✅ 프론트에서 맞춰서 보낼 파라미터들
-    const { from, to, q, safe, revisit, new: isNew, guide } = req.query;
+    const { from, to, q, safe, revisit, new: isNew, guide ,repair} = req.query;
 
     let sql = `
       select
@@ -61,6 +61,8 @@ router.get("/", async (req, res) => {
     if (safe === "1")    sql += ` and customer_type = '안심회원'`;
     if (revisit === "1") sql += ` and customer_type = '재방문'`;
     if (isNew === "1")   sql += ` and customer_type = '신규'`;
+    if (repair === "1")  sql += ` and customer_type = '수리'`;
+  
 
     // ✅ 수리안내: 안심회원 + 90일 도래만
     if (guide === "1") {

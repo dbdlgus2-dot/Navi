@@ -18,6 +18,7 @@ function bindSearchEvents() {
   $("#onlyRevisit")?.addEventListener("change", load);
   $("#onlyGuide")?.addEventListener("change", load);
   $("#onlyNew")?.addEventListener("change", load);
+  $("#repair")?.addEventListener("change", load);
 
   $("#q")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {

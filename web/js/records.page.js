@@ -3,6 +3,7 @@ import { $, initDefaultDates, normalizeRow } from "./util.js";
 import { api } from "./api.js";
 import { renderRows, renderSums } from "./ui.js";
 
+
 let rows = [];
 
 export function getRows() {
@@ -23,7 +24,9 @@ export function buildQueryString() {
   const safe = $("#onlySafe")?.checked ? "1" : "";
   const revisit = $("#onlyRevisit")?.checked ? "1" : "";
   const isNew = $("#onlyNew")?.checked ? "1" : "";
+  const repair = $("#repair")?.checked ? "1" : "";
   const guide = $("#onlyGuide")?.checked ? "1" : "";
+  
 
   if (from) qs.set("from", from);
   if (to) qs.set("to", to);
@@ -33,6 +36,7 @@ export function buildQueryString() {
   if (revisit) qs.set("revisit", "1");
   if (isNew) qs.set("new", "1");
   if (guide) qs.set("guide", "1");
+  if (repair) qs.set("repair", "1");
 
   return qs.toString();
 }
@@ -79,7 +83,6 @@ async function showAdminButtonIfAdmin() {
 function init() {
   initDefaultDates(true);
   showAdminButtonIfAdmin();   // ✅ 추가
-  bindEvents();
   load().catch((e) => {
     console.error(e);
     alert(e.message || "불러오기 실패");
