@@ -41,37 +41,29 @@ function escapeHtml(s) {
 /* =========================
    ✅ 복사 유틸 (안전 버전)
 ========================= */
-function copyText(text, fallbackEl) {
-  // 1) 최신 방식(가능할 때만)
+function copyText(text) {
+  // 1) 최신 API는 HTTPS/localhost에서만 기대할 것
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text).then(
-      () => alert("복사 완료"),
-      () => legacyCopy(text, fallbackEl)
-    );
-    return;
+    return navigator.clipboard.writeText(text)
+      .then(() => alert("복사 완료"))
+      .catch(() => legacyCopy(text));
   }
-  // 2) 구식 방식
-  legacyCopy(text, fallbackEl);
+  // 2) HTTP면 대부분 여기로 옴
+  return legacyCopy(text);
 }
 
-function legacyCopy(text, fallbackEl) {
+function legacyCopy(text) {
+  // iOS/모달에서도 그나마 잘 되는 textarea 방식
   const ta = document.createElement("textarea");
   ta.value = text;
-
-  // ✅ iOS/인앱브라우저는 화면 밖(-9999px) 보다 "화면 안 + 투명"이 더 잘 됨
-  ta.style.position = "fixed";
-  ta.style.left = "0";
-  ta.style.top = "0";
-  ta.style.width = "1px";
-  ta.style.height = "1px";
-  ta.style.opacity = "0";
   ta.setAttribute("readonly", "");
-
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  ta.style.top = "0";
   document.body.appendChild(ta);
 
   ta.focus();
   ta.select();
-  ta.setSelectionRange(0, ta.value.length);
 
   let ok = false;
   try {
@@ -79,6 +71,7 @@ function legacyCopy(text, fallbackEl) {
   } catch (_) {
     ok = false;
   }
+
   document.body.removeChild(ta);
 
   if (ok) {
@@ -86,15 +79,8 @@ function legacyCopy(text, fallbackEl) {
     return true;
   }
 
-  // 3) ✅ 최후: 화면에 보이는 비밀번호 텍스트를 선택해줌(사용자가 직접 복사 가능)
-  if (fallbackEl) {
-    const range = document.createRange();
-    range.selectNodeContents(fallbackEl);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-  alert("자동 복사가 막혔어요. 선택된 비밀번호를 길게 눌러 복사해주세요.");
+  // 3) 최후 보루: 사용자가 직접 복사
+  window.prompt("복사가 제한되어 직접 복사해주세요 (Ctrl+C)", text);
   return false;
 }
 
