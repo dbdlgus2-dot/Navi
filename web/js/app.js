@@ -41,19 +41,37 @@ function escapeHtml(s) {
 /* =========================
    ✅ 복사 유틸 (안전 버전)
 ========================= */
-function copyText(text) {
-  const el = document.createElement("input");
-  el.type = "text";
-  el.value = text;
-  el.setAttribute("readonly", "");
-  el.style.position = "fixed";
-  el.style.left = "-9999px";
-  el.style.top = "0";
-  document.body.appendChild(el);
+function copyText(text, fallbackEl) {
+  // 1) 최신 방식(가능할 때만)
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(
+      () => alert("복사 완료"),
+      () => legacyCopy(text, fallbackEl)
+    );
+    return;
+  }
+  // 2) 구식 방식
+  legacyCopy(text, fallbackEl);
+}
 
-  el.focus();
-  el.select();
-  el.setSelectionRange(0, el.value.length); // ✅ 모바일/사파리 대비
+function legacyCopy(text, fallbackEl) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+
+  // ✅ iOS/인앱브라우저는 화면 밖(-9999px) 보다 "화면 안 + 투명"이 더 잘 됨
+  ta.style.position = "fixed";
+  ta.style.left = "0";
+  ta.style.top = "0";
+  ta.style.width = "1px";
+  ta.style.height = "1px";
+  ta.style.opacity = "0";
+  ta.setAttribute("readonly", "");
+
+  document.body.appendChild(ta);
+
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0, ta.value.length);
 
   let ok = false;
   try {
@@ -61,15 +79,23 @@ function copyText(text) {
   } catch (_) {
     ok = false;
   }
+  document.body.removeChild(ta);
 
-  document.body.removeChild(el);
-
-  if (!ok) {
-    alert("복사 실패(직접 드래그해서 복사해주세요)");
-    return false;
+  if (ok) {
+    alert("복사 완료");
+    return true;
   }
-  alert("복사 완료");
-  return true;
+
+  // 3) ✅ 최후: 화면에 보이는 비밀번호 텍스트를 선택해줌(사용자가 직접 복사 가능)
+  if (fallbackEl) {
+    const range = document.createRange();
+    range.selectNodeContents(fallbackEl);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+  alert("자동 복사가 막혔어요. 선택된 비밀번호를 길게 눌러 복사해주세요.");
+  return false;
 }
 
 /* =========================
