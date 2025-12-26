@@ -1,25 +1,34 @@
 :root{
   --bg1:#0b1020;
   --bg2:#0f1c3a;
-  --card:#0f172aee;
-  --stroke:rgba(255,255,255,.12);
-  --text:rgba(255,255,255,.92);
-  --muted:rgba(255,255,255,.65);
-  --muted2:rgba(255,255,255,.45);
+
+  --card1: rgba(15,23,42,.92);
+  --card2: rgba(15,23,42,.78);
+
+  --stroke: rgba(255,255,255,.14);
+  --stroke2: rgba(255,255,255,.10);
+
+  --text: rgba(255,255,255,.94);
+  --muted: rgba(255,255,255,.72);
+  --muted2: rgba(255,255,255,.52);
+
   --primary:#6ee7ff;
   --primary2:#a78bfa;
+
   --shadow: 0 20px 60px rgba(0,0,0,.45);
 }
 
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
+
 body{
   margin:0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, "Noto Sans KR", "Malgun Gothic", sans-serif;
   color: var(--text);
-  background: radial-gradient(1200px 700px at 20% 10%, rgba(110,231,255,.18), transparent 55%),
-              radial-gradient(900px 600px at 80% 30%, rgba(167,139,250,.18), transparent 55%),
-              linear-gradient(160deg, var(--bg1), var(--bg2));
+  background:
+    radial-gradient(1200px 700px at 20% 10%, rgba(110,231,255,.18), transparent 55%),
+    radial-gradient(900px 600px at 80% 30%, rgba(167,139,250,.18), transparent 55%),
+    linear-gradient(160deg, var(--bg1), var(--bg2));
 }
 
 .bg{
@@ -30,28 +39,34 @@ body{
   padding:28px 16px;
 }
 
+/* ✅ 카드(회원가입 톤) */
 .card{
   width:min(460px, 100%);
-  background: linear-gradient(180deg, rgba(15,23,42,.92), rgba(15,23,42,.78));
+  background: linear-gradient(180deg, var(--card1), var(--card2));
   border:1px solid var(--stroke);
   border-radius:18px;
   box-shadow: var(--shadow);
   padding:22px 22px 18px;
   position:relative;
   overflow:hidden;
+  isolation:isolate; /* ✅ 오버레이가 글씨 덮는 문제 근본 해결 */
 }
 
 .card::before{
   content:"";
   position:absolute;
   inset:-2px;
-  background: radial-gradient(600px 240px at 20% 0%, rgba(110,231,255,.18), transparent 60%),
-              radial-gradient(600px 240px at 90% 10%, rgba(167,139,250,.18), transparent 60%);
+  background:
+    radial-gradient(650px 260px at 18% 0%, rgba(110,231,255,.18), transparent 62%),
+    radial-gradient(650px 260px at 92% 12%, rgba(167,139,250,.18), transparent 62%);
+  opacity:.55;
+  z-index:0;
   pointer-events:none;
 }
 
-.brand{
-  position:relative;
+.card > *{ position:relative; z-index:1; }
+
+.head{
   display:flex;
   gap:12px;
   align-items:center;
@@ -60,7 +75,7 @@ body{
   border-bottom:1px solid rgba(255,255,255,.10);
 }
 
-.mark{
+.logo{
   width:44px; height:44px;
   border-radius:14px;
   display:flex; align-items:center; justify-content:center;
@@ -70,24 +85,28 @@ body{
   border:1px solid rgba(255,255,255,.16);
 }
 
-.title{
-  font-size:18px;
-  font-weight:800;
+h1{
+  margin:0;
+  font-size:26px;
+  font-weight:900;
   letter-spacing:-.02em;
-  line-height:1.2;
-}
-.desc{
-  margin-top:4px;
-  font-size:13px;
-  color:var(--muted);
+  color: rgba(255,255,255,.97); /* ✅ 제목 선명 */
 }
 
-.form{ position:relative; display:grid; gap:12px; }
-.field label{
+.sub{
+  margin-top:6px;
+  font-size:13px;
+  color: var(--muted); /* ✅ 부제 선명 */
+}
+
+/* 폼 */
+.form{ display:grid; gap:12px; }
+
+label{
   display:block;
   font-size:12px;
-  color:var(--muted);
   margin:0 0 6px 2px;
+  color: rgba(255,255,255,.82);  /* ✅ 라벨 더 밝게(지금 핵심) */
 }
 
 .input{
@@ -95,36 +114,34 @@ body{
   height:44px;
   padding:0 12px;
   border-radius:12px;
-  border:1px solid rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.16);
   background: rgba(2,6,23,.45);
-  color:var(--text);
+  color: var(--text);
   outline:none;
-  transition: .18s ease;
+  transition:.18s ease;
 }
-.input::placeholder{ color: rgba(255,255,255,.38); }
+.input::placeholder{ color: rgba(255,255,255,.45); }
 .input:focus{
-  border-color: rgba(110,231,255,.45);
-  box-shadow: 0 0 0 4px rgba(110,231,255,.10);
+  border-color: rgba(110,231,255,.50);
+  box-shadow: 0 0 0 4px rgba(110,231,255,.12);
 }
 
-.btn{
+.btn.primary{
   height:46px;
   border:none;
   border-radius:12px;
   cursor:pointer;
-  font-weight:800;
+  font-weight:900;
   letter-spacing:-.02em;
   color:#08111f;
   background: linear-gradient(135deg, var(--primary), var(--primary2));
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:10px;
   transition:.18s ease;
 }
-.btn:hover{ transform: translateY(-1px); filter: brightness(1.05); }
-.btn:active{ transform: translateY(0px); }
-.btnArrow{ font-weight:900; }
+.btn.primary:hover{ transform: translateY(-1px); filter: brightness(1.05); }
+.btn.primary:active{ transform: translateY(0px); }
 
 .msg{
   margin:4px 2px 0;
@@ -132,30 +149,173 @@ body{
   color:#ffd1d1;
 }
 
-.foot{
-  position:relative;
-  margin-top:14px;
-  padding-top:12px;
-  border-top:1px solid rgba(255,255,255,.10);
+.row2{
   display:flex;
   align-items:center;
-  justify-content:center;
+  justify-content:space-between;
   gap:10px;
-  font-size:13px;
+  margin-top:8px;
 }
 
 .link{
-  color: rgba(255,255,255,.9);
+  color: rgba(255,255,255,.92);
   text-decoration:none;
+  font-weight:700;
 }
 .link:hover{ text-decoration:underline; }
-.muted{ color: var(--muted2); }
-.dot{ color: rgba(255,255,255,.25); }
+
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:10px;
+}
+
+.chip{
+  height:34px;
+  padding:0 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.18);
+  background: rgba(2,6,23,.28);
+  color: rgba(255,255,255,.94);
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+  transition:.18s ease;
+}
+.chip:hover{
+  transform: translateY(-1px);
+  border-color: rgba(110,231,255,.45);
+  box-shadow: 0 0 0 4px rgba(110,231,255,.10);
+}
 
 .hint{
-  position:relative;
   margin-top:10px;
   font-size:12px;
   color: var(--muted2);
   text-align:center;
+}
+
+/* ✅ 모달도 둥글고 깔끔하게 */
+.modal-content{ border-radius:16px; }
+.modal-header{ border-bottom:1px solid rgba(0,0,0,.08); }
+.modal-footer{ border-top:1px solid rgba(0,0,0,.08); }
+
+
+
+/* =========================
+   Auth Modal (Find ID / Reset PW)
+   ========================= */
+
+/* 배경(오버레이) 좀 더 고급스럽게 */
+.modal-backdrop.show{
+  opacity: .65;
+}
+
+/* 모달 전체 톤: 다크 글래스 */
+.modal .modal-content{
+  background: linear-gradient(180deg, rgba(15,23,42,.96), rgba(15,23,42,.86));
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.55);
+  overflow: hidden;
+}
+
+/* 헤더/푸터 라인 */
+.modal .modal-header{
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  padding: 14px 16px;
+}
+.modal .modal-footer{
+  border-top: 1px solid rgba(255,255,255,.10);
+  padding: 12px 16px;
+}
+
+/* 제목/본문 텍스트 */
+.modal .modal-title{
+  color: rgba(255,255,255,.96);
+  font-weight: 900;
+  letter-spacing: -.02em;
+}
+.modal .modal-body{
+  padding: 14px 16px 10px;
+  color: rgba(255,255,255,.90);
+}
+
+/* 닫기(X) 버튼 흰색 */
+.modal .btn-close{
+  filter: invert(1) grayscale(100%);
+  opacity: .85;
+}
+.modal .btn-close:hover{ opacity: 1; }
+
+/* 라벨 */
+.modal .form-label{
+  color: rgba(255,255,255,.82);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* 인풋 */
+.modal .form-control{
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(2,6,23,.45);
+  border: 1px solid rgba(255,255,255,.16);
+  color: rgba(255,255,255,.94);
+}
+.modal .form-control::placeholder{ color: rgba(255,255,255,.45); }
+.modal .form-control:focus{
+  background: rgba(2,6,23,.55);
+  border-color: rgba(110,231,255,.55);
+  box-shadow: 0 0 0 4px rgba(110,231,255,.12);
+}
+
+/* 버튼 (모달 안에서만) */
+.modal .btn{
+  border-radius: 12px;
+  font-weight: 900;
+}
+.modal .btn-primary{
+  border: 0;
+  color: #08111f;
+  background: linear-gradient(135deg, var(--primary), var(--primary2));
+}
+.modal .btn-danger{
+  border: 0;
+  color: #08111f;
+  background: linear-gradient(135deg, #ff8aa5, #a78bfa);
+}
+.modal .btn-outline-secondary{
+  border-color: rgba(255,255,255,.22);
+  color: rgba(255,255,255,.92);
+  background: transparent;
+}
+.modal .btn-outline-secondary:hover{
+  border-color: rgba(255,255,255,.35);
+  background: rgba(255,255,255,.06);
+}
+
+/* 결과 영역(리스트/알림)도 다크톤으로 */
+.modal .list-group-item{
+  background: rgba(2,6,23,.35);
+  border: 1px solid rgba(255,255,255,.10);
+  color: rgba(255,255,255,.92);
+}
+.modal .badge.text-bg-light{
+  background: rgba(255,255,255,.10) !important;
+  color: rgba(255,255,255,.85) !important;
+}
+
+/* alert도 다크톤 */
+.modal .alert{
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(2,6,23,.35);
+  color: rgba(255,255,255,.92);
+}
+.modal .alert-warning{
+  border-color: rgba(255,205,110,.25);
+}
+.modal .alert-danger{
+  border-color: rgba(255,110,110,.25);
 }

@@ -62,18 +62,21 @@ export function initPage() {
     alert(e.message || "불러오기 실패");
   });
 }
-/* ✅ 관리자 버튼 표시 */
+/* ✅ 관리자 버튼 표시 (기존 유지 + 메뉴 추가) */
 async function showAdminButtonIfAdmin() {
-  const btn = document.querySelector("#btnAdmin");
-  if (!btn) return;
+  const btnAdmin = document.querySelector("#btnAdmin");   // 기존 버튼
+  const menuAdmin = document.querySelector("#menuAdmin"); // 햄버거 메뉴용
+
+  if (!btnAdmin && !menuAdmin) return;
 
   try {
     const r = await fetch("/api/me", { credentials: "include" });
     if (!r.ok) return; // 401이면 그냥 숨김 유지
 
     const me = await r.json();
-    if (me?.role === "ADMIN") {
-      btn.classList.remove("d-none"); // ✅ 관리자면 표시
+    if (String(me?.role).toUpperCase() === "ADMIN") {
+      btnAdmin?.classList.remove("d-none");
+      menuAdmin?.classList.remove("d-none");
     }
   } catch (e) {
     // 네트워크 오류면 숨김 유지

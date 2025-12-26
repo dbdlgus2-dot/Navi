@@ -33,7 +33,7 @@ app.use(
 
 app.use("/api/admin", require("./routes/adminUsers"));
 app.use("/api/admin", require("./routes/admin")); 
-app.use("/api/recover", require("./routes/recover"));
+
 // 정적 서빙
 app.use(express.static(WEB_DIR));
 
@@ -44,7 +44,6 @@ app.get("/register", (req, res) => res.sendFile(path.join(WEB_DIR, "register.htm
 app.get("/records", (req, res) => res.sendFile(path.join(WEB_DIR, "records.html")));
 app.get("/admin", adminOnly, (req, res) => res.sendFile(path.join(WEB_DIR, "admin.html")));
 app.get("/mypage", (req, res) =>  res.sendFile(path.join(WEB_DIR, "mypage.html")));
-app.get("/recover", (req, res) => res.sendFile(path.join(WEB_DIR, "recover.html")));
 
 // API
 app.use("/api", authRoutes);

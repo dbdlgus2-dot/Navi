@@ -24,30 +24,28 @@
 
   <!-- 왼쪽: 햄버거 -->
   <div class="dropdown">
-    <button
-      class="btn btn-outline-secondary"
-      id="btnMenu"
-      data-bs-toggle="dropdown"
-      aria-expanded="false"
-    >
-      ☰
-    </button>
-
-    <ul class="dropdown-menu">
-      <li>
-        <a class="dropdown-item" href="/mypage.html">
-          👤 마이페이지
-        </a>
-      </li>
-      <li><hr class="dropdown-divider"></li>
-      <li>
-        <button class="dropdown-item text-danger" id="btnLogout">
-          🚪 로그아웃
-        </button>
-      </li>
-    </ul>
-  </div>
-
+  <button
+    class="btn btn-outline-secondary"
+    id="btnMenu"
+    data-bs-toggle="dropdown"
+    aria-expanded="false"
+  >
+    ☰
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end" id="userMenu">
+  <!-- ✅ 관리자: 링크만 (records.events.js에서 처리 안 함) -->
+    <li id="menuAdmin" class="d-none">
+      <a class="dropdown-item" href="/admin">🛠 관리자</a>
+    </li>
+  <li>
+    <a class="dropdown-item" href="/mypage">👤 마이페이지</a>
+  </li>
+  <li><hr class="dropdown-divider"></li>
+  <li>
+    <button class="dropdown-item text-danger" id="btnLogout">🚪 로그아웃</button>
+  </li>
+</ul>
+</div>
   <!-- 가운데: 타이틀 -->
   <h4 class="m-0">수리/결제 기록</h4>
 
@@ -173,8 +171,6 @@
                 <th class="col-product">제품/차량</th>
                 <th class="col-desc">수리내용</th>
                 <th class="col-status">상태</th>
-              <!--  <th class="col-guide">수리안내</th> -->
-              <!--  <th class="col-actions text-end">관리</th>-->
               </tr>
             </thead>
 

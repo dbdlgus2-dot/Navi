@@ -3,7 +3,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const pool = require("../db");
-
+const crypto = require("crypto");
 const router = express.Router();
 
 function formatYMD(date) {
@@ -63,10 +63,11 @@ router.post("/login", async (req, res) => {
     const { login_id, password } = req.body || {};
 
     const r = await pool.query(
-      `select id, user_id, login_id, pw_hash, name,
-              is_active, role, joined_at, paid_until, suspend_reason
-       from app_users
-       where login_id=$1`,
+      `select id, user_id, login_id, pw_hash, name, is_active, role,
+       joined_at, paid_until, suspend_reason,
+       must_change_password
+        from app_users
+        where login_id=$1`,
       [login_id]
     );
 
@@ -123,6 +124,7 @@ router.post("/login", async (req, res) => {
       login_id: user.login_id,
       name: user.name,
       role: String(user.role || "USER").toUpperCase(),
+      must_change_password: !!user.must_change_password,
     };
 
     return res.json({ ok: true });
@@ -257,6 +259,198 @@ router.patch("/me/password", async (req, res) => {
   } catch (e) {
     console.error("[PATCH /api/me/password]", e);
     res.status(500).json({ message: e.message });
+  }
+});
+
+async function logAuth(pool, { kind, ok, login_id=null, user_id=null, message=null, req }) {
+  await pool.query(
+    `insert into auth_logs(kind, ok, login_id, user_id, message, ip, user_agent)
+     values($1,$2,$3,$4,$5,$6,$7)`,
+    [
+      kind, ok, login_id, user_id, message,
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip,
+      req.headers["user-agent"] || ""
+    ]
+  );
+}
+
+// 로그 남기기
+async function writeAuthLog(pool, req, { login_id, action, ok, message }) {
+  try {
+    await pool.query(
+      `insert into auth_logs (login_id, action, ok, ip, ua, message)
+       values ($1,$2,$3,$4,$5,$6)`,
+      [
+        login_id || null,
+        action,
+        !!ok,
+        req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || "",
+        req.headers["user-agent"] || "",
+        message || null,
+      ]
+    );
+  } catch (_) {}
+}
+
+function maskEmail(email) {
+  if (!email) return "";
+  const s = String(email);
+  const [id, domain] = s.split("@");
+  if (!domain) return s[0] + "***";
+  const left = id.length <= 2 ? id[0] + "*" : id.slice(0, 2) + "*".repeat(Math.min(6, id.length - 2));
+  const dparts = domain.split(".");
+  const d0 = dparts[0] || "";
+  const d0m = d0.length <= 2 ? d0[0] + "*" : d0.slice(0, 2) + "*".repeat(Math.min(6, d0.length - 2));
+  const rest = dparts.slice(1).join(".");
+  return `${left}@${d0m}${rest ? "." + rest : ""}`;
+}
+
+function makeTempPassword() {
+  // 보기 좋은 임시비번 (12자)
+  return crypto.randomBytes(9).toString("base64").replace(/[^a-zA-Z0-9]/g, "").slice(0, 12);
+}
+
+/**
+ * ✅ 아이디 찾기 (아이디=이메일)
+ * POST /api/find-id
+ * body: { name, email }
+ * return: { ok:true, results:[ { masked_login_id, joined_at } ... ] }
+ */
+router.post("/find-id", async (req, res) => {
+  try {
+    const name = String(req.body?.name || "").trim();
+    const email = String(req.body?.email || "").trim();
+
+    if (!name || !email) return res.status(400).json({ message: "이름/이메일이 필요합니다." });
+
+    const r = await pool.query(
+      `select login_id, joined_at
+       from app_users
+       where name = $1 and email = $2
+       order by id desc
+       limit 10`,
+      [name, email]
+    );
+
+    await writeAuthLog(pool, req, {
+      login_id: email,
+      action: "FIND_ID",
+      ok: true,
+      message: `count=${r.rows.length}`,
+    });
+
+    const results = r.rows.map(x => ({
+      masked_login_id: maskEmail(x.login_id),
+      joined_at: x.joined_at ? String(x.joined_at).slice(0,10) : null,
+    }));
+
+    return res.json({ ok: true, results });
+  } catch (e) {
+    console.error("[POST /api/find-id ERROR]", e);
+    await writeAuthLog(pool, req, { action: "FIND_ID", ok: false, message: e.message });
+    return res.status(500).json({ message: e.message });
+  }
+});
+
+
+/**
+ * ✅ 비밀번호 재발급 (화면에 임시비번 노출)
+ * POST /api/reset-password
+ * body: { login_id, name, email }
+ *
+ * 정책:
+ * - 실패 5회면 잠금(15분)
+ * - 재발급 쿨타임(예: 3분)
+ * - 성공 시: pw_hash=임시비번 해시, must_change_password=true, fail_count=0
+ */
+router.post("/reset-password", async (req, res) => {
+  try {
+    const login_id = String(req.body?.login_id || "").trim();
+    const name = String(req.body?.name || "").trim();
+    const email = String(req.body?.email || "").trim();
+
+    if (!login_id || !name || !email) {
+      return res.status(400).json({ message: "아이디/이름/이메일이 필요합니다." });
+    }
+
+    const u = await pool.query(
+      `select id, login_id, name, email,
+              pw_reset_last_shown_at, pw_reset_fail_count, pw_reset_locked_until
+       from app_users
+       where login_id = $1
+       limit 1`,
+      [login_id]
+    );
+
+    if (u.rows.length === 0) {
+      await writeAuthLog(pool, req, { login_id, action: "RESET_PW", ok: false, message: "no_user" });
+      return res.status(400).json({ message: "정보가 일치하지 않습니다." });
+    }
+
+    const user = u.rows[0];
+
+    // 잠금 체크
+    if (user.pw_reset_locked_until && new Date(user.pw_reset_locked_until) > new Date()) {
+      await writeAuthLog(pool, req, { login_id, action: "RESET_PW", ok: false, message: "locked" });
+      return res.status(429).json({ message: "재설정이 잠금 상태입니다. 잠시 후 다시 시도하세요." });
+    }
+
+    // 정보 매칭 실패 처리 (5회 잠금)
+    if (user.name !== name || user.email !== email) {
+      const fail = Number(user.pw_reset_fail_count || 0) + 1;
+      const locked = fail >= 5 ? "now() + interval '15 minutes'" : "null";
+
+      await pool.query(
+        `update app_users
+         set pw_reset_fail_count = $2,
+             pw_reset_locked_until = ${locked},
+             updated_at = now()
+         where id = $1`,
+        [user.id, fail]
+      );
+
+      await writeAuthLog(pool, req, { login_id, action: "RESET_PW", ok: false, message: `mismatch fail=${fail}` });
+
+      if (fail >= 5) {
+        return res.status(429).json({ message: "5회 실패로 15분 잠금되었습니다." });
+      }
+      return res.status(400).json({ message: "정보가 일치하지 않습니다." });
+    }
+
+    // 쿨타임(3분)
+    if (user.pw_reset_last_shown_at) {
+      const last = new Date(user.pw_reset_last_shown_at).getTime();
+      const now = Date.now();
+      const diffSec = Math.floor((now - last) / 1000);
+      if (diffSec < 180) {
+        await writeAuthLog(pool, req, { login_id, action: "RESET_PW", ok: false, message: `cooldown ${diffSec}s` });
+        return res.status(429).json({ message: "잠시 후 다시 시도하세요. (재발급 쿨타임)" });
+      }
+    }
+
+    const tempPw = makeTempPassword();
+    const pw_hash = await bcrypt.hash(tempPw, 10);
+
+    await pool.query(
+      `update app_users
+       set pw_hash = $2,
+           must_change_password = true,
+           pw_reset_last_shown_at = now(),
+           pw_reset_fail_count = 0,
+           pw_reset_locked_until = null,
+           updated_at = now()
+       where id = $1`,
+      [user.id, pw_hash]
+    );
+
+    await writeAuthLog(pool, req, { login_id, action: "RESET_PW", ok: true, message: "issued_temp_pw" });
+
+    // ✅ 화면에 노출 (요구사항)
+    return res.json({ ok: true, temp_password: tempPw });
+  } catch (e) {
+    console.error("[POST /api/reset-password ERROR]", e);
+    await writeAuthLog(pool, req, { action: "RESET_PW", ok: false, message: e.message });
+    return res.status(500).json({ message: e.message });
   }
 });
 
