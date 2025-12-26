@@ -3,6 +3,7 @@
 const express = require("express");
 const pool = require("../db");
 const adminOnly = require("../middlewares/adminOnly");
+const bcrypt = require("bcryptjs");
 
 const router = express.Router();
 router.use(adminOnly);
@@ -60,54 +61,86 @@ router.get("/", async (req, res) => {
 router.patch("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    if (!Number.isFinite(id) || id <= 0) {
-      return res.status(400).json({ message: "id가 이상함" });
+    if (!id) return res.status(400).json({ message: "id가 이상함" });
+
+    const b = req.body || {};
+
+    // 기본정보
+    const login_id = b.login_id ? String(b.login_id).trim() : null;
+    const name     = b.name ? String(b.name).trim() : null;
+    const phone    = b.phone ? String(b.phone).trim() : null;
+    const email    = b.email ? String(b.email).trim() : null;
+
+    // 권한/상태
+    const role = String(b.role ?? "USER").toUpperCase();
+    const is_active = b.is_active ?? true;
+
+    // 날짜
+    const paid_until = b.paid_until || null;            // 'YYYY-MM-DD'
+    const last_payment_at = b.last_payment_at || null;  // 'YYYY-MM-DD'
+
+    // 정지
+    let suspended_at = b.suspended_at ?? null;
+    let suspend_reason = b.suspend_reason ?? null;
+
+    if (is_active === false && !suspended_at) suspended_at = new Date();
+    if (is_active === true) {
+      suspended_at = null;
+      suspend_reason = null;
     }
 
-    const body = req.body || {};
+    // 비번(옵션) - 있으면 해시해서 저장
+    let pw_hash = null;
+    if (b.password && String(b.password).trim()) {
+      const pw = String(b.password);
+      if (pw.length < 8) return res.status(400).json({ message: "비밀번호는 8자 이상" });
+      pw_hash = await bcrypt.hash(pw, 10);
+    }
 
-    const role = String(body.role || "USER").toUpperCase();
-    const isActive = body.is_active === false ? false : true; // 기본 true
-
-    const paidUntil = body.paid_until || null;
-    const lastPaymentAt = body.last_payment_at || null;
-
-    // 정지 사유: 정지일 때만 반영, 활성일 땐 null
-    const suspendReason = isActive ? null : (String(body.suspend_reason || "").trim() || null);
-
-    const { rows } = await pool.query(
-      `
+    const sql = `
       update app_users
       set
-        role = $1,
-        is_active = $2,
-        paid_until = $3,
-        last_payment_at = $4,
+        login_id = coalesce($1, login_id),
+        name = coalesce($2, name),
+        phone = $3,
+        email = $4,
 
-        suspended_at = case
-          when $2 = false then coalesce(suspended_at, now())  -- 정지: 없으면 now()
-          else null                                           -- 활성: null
-        end,
+        role = $5,
+        is_active = $6,
+        paid_until = $7,
+        last_payment_at = $8,
+        suspended_at = $9,
+        suspend_reason = $10,
 
-        suspend_reason = case
-          when $2 = false then $5  -- 정지: 입력값(없으면 null)
-          else null                 -- 활성: null
-        end,
-
+        pw_hash = coalesce($11, pw_hash),
         updated_at = now()
-      where id = $6
+      where id = $12
       returning
         id, user_id, login_id, name, phone, email, role, is_active,
         joined_at, last_payment_at, paid_until, suspended_at, suspend_reason
-      `,
-      [role, isActive, paidUntil, lastPaymentAt, suspendReason, id]
-    );
+    `;
 
-    if (!rows.length) return res.status(404).json({ message: "유저 없음" });
-    return res.json({ ok: true, user: rows[0] });
+    const r = await pool.query(sql, [
+      login_id,
+      name,
+      phone,
+      email,
+      role,
+      is_active,
+      paid_until,
+      last_payment_at,
+      suspended_at,
+      suspend_reason,
+      pw_hash,
+      id,
+    ]);
+
+    if (r.rows.length === 0) return res.status(404).json({ message: "유저 없음" });
+    res.json({ ok: true, user: r.rows[0] });
   } catch (e) {
     console.error("[PATCH /api/admin/users/:id ERROR]", e);
-    return res.status(500).json({ message: e.message });
+    if (e.code === "23505") return res.status(409).json({ message: "이미 존재하는 로그인 ID" });
+    res.status(500).json({ message: e.message });
   }
 });
 

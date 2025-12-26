@@ -192,3 +192,7 @@ body{
   color: #027a48;
   border-color: #abefc6;
 }
+#btnMenu {
+  font-size: 20px;
+  padding: 6px 12px;
+}

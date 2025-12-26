@@ -5,7 +5,13 @@ let selectedId = null;
 
 async function apiFetch(url, opt = {}) {
   const r = await fetch(url, { credentials: "include", ...opt });
-  const data = await r.json().catch(() => ({}));
+
+  let data = {};
+  try {
+    data = await r.json();
+  } catch (_) {
+    data = {};
+  }
 
   if (r.status === 401) {
     alert("로그인이 필요합니다.");
@@ -17,7 +23,10 @@ async function apiFetch(url, opt = {}) {
     location.href = "/records";
     return null;
   }
-  if (!r.ok) throw new Error(data.message || "요청 실패");
+
+  if (!r.ok) {
+    throw new Error(data.message || `요청 실패 (${r.status})`);
+  }
   return data;
 }
 
@@ -143,6 +152,33 @@ function renderDetail(u) {
           <label class="form-label">가입일</label>
           <input class="form-control" value="${joined}" disabled />
         </div>
+        <div class="row g-2 mt-2">
+        <div class="col-md-6">
+            <label class="form-label">로그인ID</label>
+            <input id="adminLoginId" class="form-control" value="${u.login_id || ""}" />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">이름</label>
+            <input id="adminName" class="form-control" value="${u.name || ""}" />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">전화번호</label>
+            <input id="adminPhone" class="form-control" value="${u.phone || ""}" />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">이메일</label>
+            <input id="adminEmail" class="form-control" value="${u.email || ""}" />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">비밀번호 변경</label>
+            <input id="adminPassword" type="password" class="form-control" placeholder="변경 시에만 입력(8자+)" />
+            <div class="small text-muted mt-1">입력하면 즉시 변경됩니다.</div>
+        </div>
+        </div>
 
         <div class="col-md-6">
           <label class="form-label">결제일(시작일)</label>
@@ -201,23 +237,38 @@ async function loadUsers() {
 async function onSave() {
   if (!selectedId) return;
 
-  const payload = {
-    role: $("#adminRole").value,
-    is_active: $("#adminActive").value === "true",
-    last_payment_at: $("#adminLastPay").value || null,
-    paid_until: $("#adminPaidUntil").value || null,
-    suspend_reason: ($("#adminSuspendReason").value || "").trim() || null,
-  };
+  try {
+    const payload = {
+      login_id: $("#adminLoginId")?.value?.trim() || null,
+      name: $("#adminName")?.value?.trim() || null,
+      phone: ($("#adminPhone")?.value || "").trim() || null,
+      email: ($("#adminEmail")?.value || "").trim() || null,
 
-  const r = await apiFetch(`/api/admin/users/${selectedId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!r) return;
+      role: $("#adminRole").value,
+      is_active: $("#adminActive").value === "true",
+      last_payment_at: $("#adminLastPay").value || null,
+      paid_until: $("#adminPaidUntil").value || null,
+      suspend_reason: ($("#adminSuspendReason").value || "").trim() || null,
+    };
 
-  alert("저장 완료");
-  await loadUsers();
+    const pw = ($("#adminPassword")?.value || "").trim();
+    if (pw) payload.password = pw;
+
+    const r = await apiFetch(`/api/admin/users/${selectedId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!r) return;
+
+    alert("저장 완료");
+    $("#adminPassword").value = "";
+    await loadUsers();
+  } catch (e) {
+    console.error(e);
+    alert(e.message || "저장 실패");
+  }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

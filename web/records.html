@@ -19,16 +19,43 @@
   <div class="container-fluid px-4 py-3">
 
     <!-- Top bar -->
-    <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
-      <div>
-        <div class="brand-small">NaviGation</div>
-        <h1 class="page-title mb-0">수리/결제 기록</h1>
-      </div>
-      <a id="btnAdmin" class="btn btn-outline-dark d-none" href="/admin">관리자</a>
-      <button class="btn btn-primary btn-lg btn-new" id="btnNew">
-        <i class="bi bi-plus-lg me-2"></i>새로 입력
-      </button>
-    </div>
+<!-- 헤더 -->
+<div class="d-flex align-items-center justify-content-between mb-3">
+
+  <!-- 왼쪽: 햄버거 -->
+  <div class="dropdown">
+    <button
+      class="btn btn-outline-secondary"
+      id="btnMenu"
+      data-bs-toggle="dropdown"
+      aria-expanded="false"
+    >
+      ☰
+    </button>
+
+    <ul class="dropdown-menu">
+      <li>
+        <a class="dropdown-item" href="/mypage.html">
+          👤 마이페이지
+        </a>
+      </li>
+      <li><hr class="dropdown-divider"></li>
+      <li>
+        <button class="dropdown-item text-danger" id="btnLogout">
+          🚪 로그아웃
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- 가운데: 타이틀 -->
+  <h4 class="m-0">수리/결제 기록</h4>
+
+  <!-- 오른쪽: 새로 입력 -->
+  <button class="btn btn-primary" id="btnNew">
+    + 새로 입력
+  </button>
+</div>
 
     <!-- Filter card -->
     <div class="card soft-card mb-3">

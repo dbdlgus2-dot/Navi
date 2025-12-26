@@ -163,7 +163,29 @@ export function bindEvents() {
   bindModalEvents();
   bindTableEvents();
   bindExcelEvents();
+  bindLogout();
 
   // ✅ 관리자 버튼은 records에서 처리하지 않음 (a href="/admin" 링크로 이동)
   // => records.html에서 <a id="btnAdmin" href="/admin" ...> 로만 두면 끝
+}
+
+// ✅ 로그아웃
+function bindLogout() {
+  const btn = document.querySelector("#btnLogout");
+  if (!btn) return;
+
+  // 이미 붙었으면 또 안붙이기
+  if (btn.dataset.bound === "1") return;
+  btn.dataset.bound = "1";
+
+  btn.addEventListener("click", async () => {
+    if (!confirm("로그아웃 할까?")) return;
+
+    await fetch("/api/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+
+    location.href = "/";
+  });
 }

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Navi - 마이페이지</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/records.css">
+</head>
+
+<body>
+  <div class="container py-4">
+
+    <!-- 상단: 사용기간 -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <h5 class="mb-1">사용기간</h5>
+            <div class="text-muted small">만료되면 자동으로 비활성화(로그인 차단)</div>
+          </div>
+          <a class="btn btn-outline-secondary btn-sm" href="/records">← 기록으로</a>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-md-3">
+            <div class="text-muted small">가입일</div>
+            <div class="fw-semibold" id="meJoinedAt">-</div>
+          </div>
+          <div class="col-md-3">
+            <div class="text-muted small">만료일</div>
+            <div class="fw-semibold" id="mePaidUntil">-</div>
+          </div>
+          <div class="col-md-3">
+            <div class="text-muted small">상태</div>
+            <span class="badge bg-success" id="meActiveBadge">활성</span>
+          </div>
+          <div class="col-md-3 d-flex align-items-end justify-content-md-end gap-2">
+            <button class="btn btn-outline-secondary" id="btnMeReload">새로고침</button>
+            <button class="btn btn-outline-danger" id="btnLogout">로그아웃</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 하단: 내정보 + 비밀번호 변경 -->
+    <div class="card">
+      <div class="card-body">
+        <h5 class="mb-3">내 정보 / 비밀번호 변경</h5>
+
+        <div class="row g-4">
+          <div class="col-lg-6">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small mb-2" id="meLoginMeta">로그인ID: - / 권한: -</div>
+
+              <div class="mb-2">
+                <label class="form-label">이름</label>
+                <input id="meName" class="form-control" disabled />
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label">전화번호</label>
+                <input id="mePhone" class="form-control" />
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">이메일</label>
+                <input id="meEmail" class="form-control" />
+              </div>
+
+              <button class="btn btn-primary" id="btnSaveProfile">저장</button>
+            </div>
+          </div>
+
+          <div class="col-lg-6">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small mb-2">비밀번호는 8자 이상</div>
+
+              <div class="mb-2">
+                <label class="form-label">현재 비밀번호</label>
+                <input id="curPw" type="password" class="form-control" />
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label">새 비밀번호</label>
+                <input id="newPw" type="password" class="form-control" />
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">새 비밀번호 확인</label>
+                <input id="newPw2" type="password" class="form-control" />
+              </div>
+
+              <button class="btn btn-outline-primary" id="btnChangePw">변경</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="/js/mypage.js"></script>
+</body>
+</html>
