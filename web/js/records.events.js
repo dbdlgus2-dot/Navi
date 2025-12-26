@@ -158,6 +158,7 @@ function bindExcelEvents() {
 }
 
 export function bindEvents() {
+    console.log("bindEvents called", Date.now());
   bindSearchEvents();
   bindModalEvents();
   bindTableEvents();
