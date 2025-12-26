@@ -42,35 +42,34 @@ function escapeHtml(s) {
    ✅ 복사 유틸 (안전 버전)
 ========================= */
 function copyText(text) {
-  // 최신 방식 (HTTPS/localhost + user gesture 필요)
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text)
-      .then(() => alert("복사 완료"))
-      .catch(() => legacyCopy(text));
-  } else {
-    legacyCopy(text);
-  }
-}
+  const el = document.createElement("input");
+  el.type = "text";
+  el.value = text;
+  el.setAttribute("readonly", "");
+  el.style.position = "fixed";
+  el.style.left = "-9999px";
+  el.style.top = "0";
+  document.body.appendChild(el);
 
-function legacyCopy(text) {
-  const ta = document.createElement("textarea");
-  ta.value = text;
-  ta.style.position = "fixed";
-  ta.style.left = "-9999px";
-  ta.style.top = "0";
-  ta.style.opacity = "0";
-  document.body.appendChild(ta);
-  ta.focus();
-  ta.select();
+  el.focus();
+  el.select();
+  el.setSelectionRange(0, el.value.length); // ✅ 모바일/사파리 대비
 
+  let ok = false;
   try {
-    document.execCommand("copy");
-    alert("복사 완료");
-  } catch (e) {
-    alert("복사 실패(직접 복사해주세요)");
+    ok = document.execCommand("copy");
+  } catch (_) {
+    ok = false;
   }
 
-  ta.remove();
+  document.body.removeChild(el);
+
+  if (!ok) {
+    alert("복사 실패(직접 드래그해서 복사해주세요)");
+    return false;
+  }
+  alert("복사 완료");
+  return true;
 }
 
 /* =========================
@@ -235,7 +234,12 @@ async function onResetPw() {
     `;
 
     // ✅ 클릭 시 복사
-    $("#btnCopyTempPw")?.addEventListener("click", () => copyText(temp));
+   const btn = out.querySelector("#btnCopyTempPw");
+    btn?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      copyText(temp);
+    });
 
     // ✅ 로그인 폼 자동 입력
     const loginInput = document.querySelector('[name="login_id"]');
