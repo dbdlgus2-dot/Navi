@@ -42,24 +42,24 @@ function escapeHtml(s) {
    ✅ 복사 유틸 (안전 버전)
 ========================= */
 function copyText(text) {
-  // 1) 최신 API는 HTTPS/localhost에서만 기대할 것
+  // HTTPS/localhost면 이게 정석
   if (navigator.clipboard && window.isSecureContext) {
     return navigator.clipboard.writeText(text)
       .then(() => alert("복사 완료"))
-      .catch(() => legacyCopy(text));
+      .catch(() => legacyCopyOrPrompt(text));
   }
-  // 2) HTTP면 대부분 여기로 옴
-  return legacyCopy(text);
+  // HTTP면 대부분 여기로 옴
+  return legacyCopyOrPrompt(text);
 }
 
-function legacyCopy(text) {
-  // iOS/모달에서도 그나마 잘 되는 textarea 방식
+function legacyCopyOrPrompt(text) {
   const ta = document.createElement("textarea");
   ta.value = text;
   ta.setAttribute("readonly", "");
   ta.style.position = "fixed";
-  ta.style.left = "-9999px";
+  ta.style.left = "0";
   ta.style.top = "0";
+  ta.style.opacity = "0";
   document.body.appendChild(ta);
 
   ta.focus();
@@ -79,8 +79,8 @@ function legacyCopy(text) {
     return true;
   }
 
-  // 3) 최후 보루: 사용자가 직접 복사
-  window.prompt("복사가 제한되어 직접 복사해주세요 (Ctrl+C)", text);
+  // ✅ HTTP/브라우저 정책으로 막힌 경우: 사용자가 직접 복사 가능하게 강제
+  window.prompt("복사가 제한되어 직접 복사해주세요 (Ctrl+C / ⌘C)", text);
   return false;
 }
 
