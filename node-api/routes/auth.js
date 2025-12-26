@@ -318,37 +318,31 @@ function makeTempPassword() {
  */
 router.post("/find-id", async (req, res) => {
   try {
-    const name = String(req.body?.name || "").trim();
-    const email = String(req.body?.email || "").trim();
-
-    if (!name || !email) return res.status(400).json({ message: "이름/이메일이 필요합니다." });
+    const { name, email } = req.body || {};
+    if (!name || !email) return res.status(400).json({ message: "이름/이메일을 입력하세요." });
 
     const r = await pool.query(
-      `select login_id, joined_at
-       from app_users
-       where name = $1 and email = $2
-       order by id desc
-       limit 10`,
-      [name, email]
+      `
+      select
+        login_id,
+        to_char(joined_at::date, 'YYYY-MM-DD') as joined_at
+      from app_users
+      where name = $1 and email = $2
+      order by joined_at desc, id desc
+      `,
+      [name.trim(), email.trim()]
     );
 
-    await writeAuthLog(pool, req, {
-      login_id: email,
-      action: "FIND_ID",
-      ok: true,
-      message: `count=${r.rows.length}`,
+    // ✅ 프론트가 원하는 형태로 통일
+    res.json({
+      results: r.rows.map(x => ({
+        login_id: x.login_id,
+        joined_at: x.joined_at,
+      })),
     });
-
-    const results = r.rows.map(x => ({
-      masked_login_id: maskEmail(x.login_id),
-      joined_at: x.joined_at ? String(x.joined_at).slice(0,10) : null,
-    }));
-
-    return res.json({ ok: true, results });
   } catch (e) {
-    console.error("[POST /api/find-id ERROR]", e);
-    await writeAuthLog(pool, req, { action: "FIND_ID", ok: false, message: e.message });
-    return res.status(500).json({ message: e.message });
+    console.error("[POST /api/find-id]", e);
+    res.status(500).json({ message: e.message });
   }
 });
 

@@ -319,3 +319,126 @@ label{
 .modal .alert-danger{
   border-color: rgba(255,110,110,.25);
 }
+
+/* ================================
+   아이디 찾기 결과 (다크 모달 대응)
+================================ */
+
+#findIdResult .list-group {
+  background: transparent;
+  border: none;
+}
+
+#findIdResult .list-group-item {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  color: rgba(255,255,255,.95);
+  margin-bottom: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.35);
+}
+
+/* 아이디 텍스트 */
+#findIdResult .list-group-item span:first-child {
+  font-weight: 800;
+  letter-spacing: .02em;
+  color: #e5f6ff; /* 밝은 하늘색 */
+}
+
+/* 가입일 배지 */
+#findIdResult .badge {
+  background: linear-gradient(135deg, #6ee7ff, #a78bfa);
+  color: #08111f;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+/* ================================
+   임시 비밀번호 결과 박스
+================================ */
+
+#resetPwResult .alert {
+  background: linear-gradient(
+    180deg,
+    rgba(15,23,42,.92),
+    rgba(15,23,42,.78)
+  );
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 16px;
+  color: rgba(255,255,255,.95);
+  box-shadow: 0 12px 36px rgba(0,0,0,.45);
+}
+
+/* 제목 */
+#resetPwResult .fw-semibold {
+  font-size: 14px;
+  color: #e5f6ff;
+}
+
+/* 임시 비밀번호 텍스트 */
+#resetPwResult .font-monospace {
+  margin-top: 6px;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  color: #6ee7ff;
+  background: rgba(110,231,255,.12);
+  padding: 8px 12px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+/* 임시 비밀번호 안내 문구 강조 */
+#resetPwResult .pw-hint {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fec7c7; /* 연한 옐로우 */
+  padding: 6px 10px;
+  border-radius: 8px;
+  display: inline-block;
+}
+/* 복사 버튼 */
+#resetPwResult .btn {
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+/* 복사 버튼: 흰색으로만 또렷하게 */
+.btn-copy {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.55);
+  background: transparent;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .15s ease;
+}
+/* 결과 메시지 공통 */
+.result-msg {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* ❌ 실패 / 없음 */
+.result-msg.error {
+  background: rgba(239, 68, 68, 0.15);   /* 연한 빨강 */
+  color: #fecaca;                       /* 밝은 빨강 글씨 */
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+/* ✅ 성공 (아이디 찾기 결과 등) */
+.result-msg.success {
+  background: rgba(110, 231, 255, 0.12);
+  color: #e0f7ff;
+  border: 1px solid rgba(110, 231, 255, 0.35);
+}

@@ -51,7 +51,7 @@ import { renderTable, renderSums, createModalController } from "./ui.js";
     if (e.target.closest(".btn-edit")) modal.open("edit", row);
 
     if (e.target.closest(".btn-del")) {
-      if (!confirm("삭제할까?")) return;
+      if (!confirm("삭제할까요?")) return;
       try {
         await apiRemove(id);
         await load();

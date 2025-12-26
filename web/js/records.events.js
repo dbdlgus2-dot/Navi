@@ -179,7 +179,7 @@ function bindLogout() {
   btn.dataset.bound = "1";
 
   btn.addEventListener("click", async () => {
-    if (!confirm("로그아웃 할까?")) return;
+    if (!confirm("로그아웃 할까요?")) return;
 
     await fetch("/api/logout", {
       method: "POST",

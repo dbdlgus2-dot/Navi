@@ -77,6 +77,6 @@ export function getPayloadFromModal() {
     installment_mon: num(f.installment_mon?.value),
   };
 
-  if (!payload.name) throw new Error("성명은 필수야");
+  if (!payload.name) throw new Error("성명은 필수입니다.");
   return payload;
 }

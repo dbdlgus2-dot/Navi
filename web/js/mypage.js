@@ -69,9 +69,9 @@ async function changePassword() {
   const nw  = $("#newPw")?.value || "";
   const nw2 = $("#newPw2")?.value || "";
 
-  if (!cur || !nw) throw new Error("현재/새 비밀번호를 입력해줘");
-  if (nw.length < 8) throw new Error("새 비밀번호는 8자 이상");
-  if (nw !== nw2) throw new Error("새 비밀번호 확인이 다름");
+  if (!cur || !nw) throw new Error("현재/새 비밀번호를 입력해주세요.");
+  if (nw.length < 8) throw new Error("새 비밀번호는 8자 이상입력해주세요.");
+  if (nw !== nw2) throw new Error("새 비밀번호 확인이 다릅니다.");
 
   await apiFetch("/api/me/password", {
     method: "PATCH",

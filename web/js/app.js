@@ -3,6 +3,31 @@ window.NAVI = window.NAVI || {};
 // ❗ 여기서만 선언
 const $ = (sel) => document.querySelector(sel);
 
+// ✅ 아이디 찾기 마스킹처리
+function maskLoginId(id) {
+  if (!id) return "";
+  const s = String(id);
+  if (s.length <= 3) return "***";
+  return s.slice(0, s.length - 3) + "***";
+}
+
+// ✅ 날짜 데이터 
+function formatDateKR(s) {
+  if (!s) return "-";
+  // "2025-12-21" 같은 값이면 그대로 쓰고, timestamp면 앞 10자리로 자르기
+  const t = String(s).slice(0, 10);
+  // YYYY-MM-DD 형태면 OK
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+
+  // 그 외는 Date로 파싱 시도
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return "-";
+  const yy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
 window.NAVI.bindLogin = function () {
   const form = $("#loginForm");
   const msg = $("#msg");
@@ -55,11 +80,11 @@ window.NAVI.bindRegister = function () {
     const email = form.email.value.trim();
 
     if (password.length < 8) {
-      msg.textContent = "비밀번호는 8자 이상";
+      msg.textContent = "비밀번호는 8자 이상 입력 해주세요.";
       return;
     }
     if (password !== password_confirm) {
-      msg.textContent = "비밀번호가 서로 다름";
+      msg.textContent = "비밀번호가 서로 다릅니다.";
       return;
     }
 
@@ -98,12 +123,14 @@ function escapeHtml(s) {
   }[m]));
 }
 
+
+// ✅ 아이디 찾기
 async function onFindId() {
   const name = document.querySelector("#findIdName")?.value?.trim();
   const email = document.querySelector("#findIdEmail")?.value?.trim();
   const out = document.querySelector("#findIdResult");
 
-  out.className = "small text-muted";
+  out.className = "result-msg error";
   out.textContent = "";
 
   try {
@@ -120,16 +147,20 @@ async function onFindId() {
 
     out.className = "small";
     out.innerHTML = `
-      <div class="mb-2 text-muted">검색 결과 (마스킹)</div>
+      <div class="mb-2 fw-semibold" style="color:#e5f6ff">검색 결과 (로그인 ID)</div>
       <ul class="list-group">
         ${r.results.map(x => `
           <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>${escapeHtml(x.masked_login_id)}</span>
-            <span class="badge text-bg-light">가입 ${escapeHtml(x.joined_at || "-")}</span>
+            <span class="fw-semibold">
+              ${escapeHtml(maskLoginId(x.login_id))}
+            </span>
+            <span class="badge text-bg-light">
+              가입 ${escapeHtml(x.joined_at || "-")}
+            </span>
           </li>
         `).join("")}
-      </ul>
-    `;
+  </ul>
+`;
   } catch (e) {
     out.className = "small text-danger";
     out.textContent = e.message || "실패";
@@ -157,9 +188,9 @@ async function onResetPw() {
         <div>
           <div class="fw-semibold">임시 비밀번호</div>
           <div class="font-monospace">${escapeHtml(temp)}</div>
-          <div class="small text-muted mt-1">로그인 후 비밀번호를 꼭 변경하세요.</div>
-        </div>
-        <button class="btn btn-outline-dark btn-sm" id="btnCopyTempPw">복사</button>
+        <button class="btn-copy " id="btnCopyTempPw">복사</button>
+        <br/
+       <div class="pw-hint">로그인 후 비밀번호를 꼭 변경하세요.</div>
       </div>
     `;
 
