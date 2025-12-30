@@ -40,7 +40,7 @@ export function initDefaultDates(force = true) {
   const today = new Date();
   const from = monthAgo(today);
 
-  if (force || !fromEl.value) fromEl.value = toYMD(from);
+  //if (force || !fromEl.value) fromEl.value = toYMD(from); 산오가 시작날짜 빼달라고 요청
   if (force || !toEl.value) toEl.value = toYMD(today);
 }
 

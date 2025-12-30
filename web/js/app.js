@@ -235,16 +235,16 @@ async function onResetPw() {
     out.innerHTML = `
       <div class="temp-card">
         <div class="temp-title">임시 비밀번호</div>
-
         <div class="temp-row">
           <div class="temp-pw font-monospace">${escapeHtml(temp)}</div>
-          <button type="button" class="btn-copy" id="btnCopyTempPw">복사</button>
-        </div>
-
+          </div>
         <div class="temp-hint">로그인 후 비밀번호를 꼭 변경하세요.</div>
       </div>
     `;
-
+    /*  <div class="temp-row"> //복사버튼 만들었지만 사용 불가 localhost는 예외 허용, 서버 IP의 http는 차단.
+          <div class="temp-pw font-monospace">${escapeHtml(temp)}</div>
+          <button type="button" class="btn-copy" id="btnCopyTempPw">복사</button>
+        </div>*/
     // ✅ 클릭 시 복사
    const btn = out.querySelector("#btnCopyTempPw");
     btn?.addEventListener("click", (e) => {
