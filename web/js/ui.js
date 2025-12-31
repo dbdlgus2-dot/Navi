@@ -79,7 +79,7 @@ export function renderRows(rows) {
 
           <td>${badge(r.customer_type)}</td>
 
-          <td>${isSafe ? dateCell(r.guide_date) : `<span class="text-muted">-</span>`}</td>
+          <td>${r.guide_done_at ? toYMD(r.guide_done_at) : `<span class="text-muted">-</span>`}</td>
 
           <td class="text-end">
             ${isSafe ? guideActionCell(r) : ""}
