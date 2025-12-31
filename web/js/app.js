@@ -1,5 +1,14 @@
 window.NAVI = window.NAVI || {};
 
+function toUpperInput(el) {
+  if (!el) return;
+  el.addEventListener("input", () => {
+    const v = el.value;
+    const up = v.toUpperCase();
+    if (v !== up) el.value = up;
+  });
+}
+
 // ❗ 여기서만 선언
 const $ = (sel) => document.querySelector(sel);
 
@@ -96,7 +105,7 @@ window.NAVI.bindLogin = function () {
     e.preventDefault();
     if (msg) msg.textContent = "";
 
-    const login_id = (form.login_id?.value || "").trim();
+    const login_id = (form.login_id?.value || "").trim().toUpperCase();
     const password = form.password?.value || "";
 
     try {
@@ -130,7 +139,7 @@ window.NAVI.bindRegister = function () {
     e.preventDefault();
     if (msg) msg.textContent = "";
 
-    const login_id = form.login_id.value.trim();
+    const login_id = form.login_id.value.trim().toUpperCase();
     const password = form.password.value;
     const password_confirm = form.password_confirm.value;
     const name = form.name.value.trim();
@@ -215,7 +224,7 @@ async function onFindId() {
    ✅ 비밀번호 찾기 (임시비번 발급)
 ========================= */
 async function onResetPw() {
-  const login_id = $("#resetLoginId")?.value?.trim();
+  const login_id = ($("#resetLoginId")?.value || "").trim().toUpperCase();
   const name = $("#resetName")?.value?.trim();
   const email = $("#resetEmail")?.value?.trim();
   const out = $("#resetPwResult");
@@ -277,7 +286,11 @@ document.addEventListener("DOMContentLoaded", () => {
   window.NAVI.bindLogin();
   window.NAVI.bindRegister();
 
-  // 모달 버튼 클릭
+  // ✅ 아이디 입력은 항상 대문자
+  toUpperInput(document.querySelector('input[name="login_id"]'));   // 로그인/회원가입 공통
+  toUpperInput(document.querySelector("#resetLoginId"));            // 비번찾기
+  // (아이디찾기는 이메일이라면 굳이 안해도 됨)
+
   document.addEventListener("click", (e) => {
     if (e.target.closest("#btnFindId")) onFindId();
     if (e.target.closest("#btnResetPw")) onResetPw();

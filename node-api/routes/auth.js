@@ -6,6 +6,10 @@ const pool = require("../db");
 const crypto = require("crypto");
 const router = express.Router();
 
+function normLoginId(v) {
+  return String(v || "").trim().toUpperCase();
+}
+
 function formatYMD(date) {
   if (!date) return "";
   const d = new Date(date);
@@ -29,7 +33,9 @@ function formatYMD(date) {
 router.post("/register", async (req, res) => {
   try {
     const { login_id, password, name, phone, email } = req.body || {};
-    if (!login_id || !password || !name) {
+    const norm_id = normLoginId(login_id);
+
+    if (!norm_id || !password || !name) {
       return res.status(400).json({ message: "필수값 누락(login_id/password/name)" });
     }
     if (String(password).length < 8) {
@@ -43,11 +49,11 @@ router.post("/register", async (req, res) => {
 
     // ✅ 회원가입 insert
     const r = await pool.query(
-  `insert into app_users (user_id, login_id, pw_hash, name, phone, email, joined_at, last_payment_at, paid_until, is_active)
-   values ($1,$2,$3,$4,$5,$6, CURRENT_DATE, CURRENT_DATE, (CURRENT_DATE + INTERVAL '30 days')::date, true)
-   returning id, user_id, login_id, name, joined_at, paid_until`,
-  [user_id, login_id, pw_hash, name, phone || null, email || null]
-);
+    `insert into app_users (user_id, login_id, pw_hash, name, phone, email, joined_at, last_payment_at, paid_until, is_active)
+    values ($1,$2,$3,$4,$5,$6, CURRENT_DATE, CURRENT_DATE, (CURRENT_DATE + INTERVAL '30 days')::date, true)
+    returning id, user_id, login_id, name, joined_at, paid_until`,
+    [user_id, norm_id, pw_hash, name, phone || null, email || null]
+  );
 
     return res.json({ ok: true, user: r.rows[0] });
   } catch (e) {
@@ -60,15 +66,16 @@ router.post("/register", async (req, res) => {
 // ✅ 로그인
 router.post("/login", async (req, res) => {
   try {
-    const { login_id, password } = req.body || {};
+   const { login_id, password } = req.body || {};
+   const norm_id = normLoginId(login_id);
 
     const r = await pool.query(
       `select id, user_id, login_id, pw_hash, name, is_active, role,
-       joined_at, paid_until, suspend_reason,
-       must_change_password
-        from app_users
-        where login_id=$1`,
-      [login_id]
+              joined_at, paid_until, suspend_reason,
+              must_change_password
+      from app_users
+      where login_id = $1`,
+      [norm_id]
     );
 
     if (r.rows.length === 0) {
@@ -184,25 +191,23 @@ router.patch("/me/profile", async (req, res) => {
     }
 
     const { name, phone, email } = req.body || {};
-    if (!name) {
-      return res.status(400).json({ message: "이름은 필수입니다." });
-    }
+    if (!name) return res.status(400).json({ message: "이름은 필수입니다." });
 
     const r = await pool.query(
       `
       update app_users
       set
-        phone = $1,
-        email = $2,
+        name = $1,
+        phone = $2,
+        email = $3,
         updated_at = now()
-      where id = $3
-      returning id, login_id, phone, email, role
+      where id = $4
+      returning id, login_id, name, phone, email, role
       `,
       [name, phone || null, email || null, req.session.user.id]
     );
 
-    // 세션에도 반영 (중요)
-    req.session.user.name = r.rows[0].name;
+req.session.user.name = r.rows[0].name;
 
     res.json({ ok: true, user: r.rows[0] });
   } catch (e) {
@@ -359,7 +364,7 @@ router.post("/find-id", async (req, res) => {
  */
 router.post("/reset-password", async (req, res) => {
   try {
-    const login_id = String(req.body?.login_id || "").trim();
+    const login_id = normLoginId(req.body?.login_id);
     const name = String(req.body?.name || "").trim();
     const email = String(req.body?.email || "").trim();
 
