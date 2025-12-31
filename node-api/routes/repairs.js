@@ -38,11 +38,7 @@ router.get("/", async (req, res) => {
         customer_type,
         to_char(guide_date, 'YYYY-MM-DD') as guide_date,
         guide_done,
-        guide_done_at,
-        (
-          customer_type = '안심회원'
-          AND current_date >= (coalesce(guide_date, repair_date) + interval '90 days')::date
-        ) AS guide_due
+        guide_done_at
       from repair_payments
       where app_user_id = $1
     `;
@@ -64,13 +60,13 @@ router.get("/", async (req, res) => {
     if (repair === "1")  sql += ` and customer_type = '수리'`;
   
 
-    // ✅ 수리안내: 안심회원 + 90일 도래만
-    if (guide === "1") {
-      sql += `
-        and customer_type = '안심회원'
-        and current_date >= (coalesce(guide_date, repair_date) + interval '90 days')::date
-      `;
-    }
+    // ✅ 수리안내 대상: 안심회원 + 아직 안내 전(딱 1번 정책)
+if (guide === "1") {
+  sql += `
+    and customer_type = '안심회원'
+    and guide_done = false
+  `;
+}
 
     sql += ` order by repair_date desc, id desc`;
 
@@ -94,7 +90,6 @@ router.get("/", async (req, res) => {
       customer_type: x.customer_type || "신규",
 
       guide_date: x.guide_date || "",
-      guide_due: x.guide_due === true || x.guide_due === "t",
       guide_done: x.guide_done === true || x.guide_done === "t",
       guide_done_at: x.guide_done_at || null,
     }));
@@ -204,12 +199,22 @@ router.put("/", async (req, res) => {
         repair_detail   = $13,
         note            = $14,
         customer_type   = $15,
-
-        -- ✅ 안심회원으로 바뀌면 기준일을 repair_date로 세팅
-        guide_date      = CASE WHEN $15 = '안심회원' THEN repair_date ELSE NULL END,
-        guide_done      = false,
-        guide_done_at   = null,
-
+        -- ✅ 안심회원으로 '새로' 바뀌는 경우에만 기준일 세팅 + 안내상태 초기화
+        guide_date = CASE
+          WHEN $15 = '안심회원' AND customer_type <> '안심회원' THEN repair_date
+          WHEN $15 <> '안심회원' THEN NULL
+          ELSE guide_date
+        END,
+        guide_done = CASE
+          WHEN $15 = '안심회원' AND customer_type <> '안심회원' THEN false
+          WHEN $15 <> '안심회원' THEN false
+          ELSE guide_done
+        END,
+        guide_done_at = CASE
+          WHEN $15 = '안심회원' AND customer_type <> '안심회원' THEN NULL
+          WHEN $15 <> '안심회원' THEN NULL
+          ELSE guide_done_at
+        END,
         updated_at      = now()
       where id = $1 and app_user_id = $2
       returning id;
@@ -276,13 +281,19 @@ router.post("/:id/guide-done", async (req, res) => {
         guide_done_at = now(),
         guide_date = current_date,
         updated_at = now()
-      where id = $1 and app_user_id = $2
+      where id = $1
+        and app_user_id = $2
+        and customer_type = '안심회원'
+        and guide_done = false
       returning id, guide_done, guide_date, guide_done_at
       `,
       [id, appUserId]
     );
 
-    if (r.rowCount === 0) return res.status(403).json({ message: "권한 없음" });
+    if (r.rowCount === 0) {
+      return res.status(409).json({ message: "이미 수리안내 완료이거나 대상이 아닙니다." });
+    }
+
     res.json({ ok: true, row: r.rows[0] });
   } catch (e) {
     console.error("[POST /api/repairs/:id/guide-done ERROR]", e);

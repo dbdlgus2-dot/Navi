@@ -77,9 +77,9 @@ function bindTableEvents() {
 
     if (e.target.closest(".btn-guide")) {
       if (row.customer_type !== "안심회원") return alert("수리안내는 안심회원만 가능합니다.");
-      if (!asBool(row.guide_due)) return alert("아직 수리안내 기간이 아닙니다. (90일 이후 활성)");
-
-      if (!confirm("수리안내 처리(안내완료)로 변경할까?")) return;
+      if (asBool(row.guide_done)) return alert("이미 수리안내 완료 처리된 건입니다."); 
+    //   if (!confirm("수리안내 처리(방문완료)로 변경할까?")) return;
+      if (!confirm("재방문 고객의 처리 상태를 완료로 변경할까요?")) return;
 
       try {
         await api.guideDone(id);
@@ -123,11 +123,7 @@ function bindExcelEvents() {
       수리내용: r.desc || "",
       상태: r.customer_type || "",
       수리안내일: r.guide_date || "",
-      안내상태: r.guide_done
-        ? "안내완료"
-        : r.guide_due
-        ? "수리안내"
-        : "대기중",
+      안내상태: r.guide_done ? "안내완료" : "미안내",
     }));
 
     const wb = XLSX.utils.book_new();

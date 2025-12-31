@@ -28,10 +28,10 @@ function guideActionCell(r) {
   const due  = asBool(r.guide_due);
 
   if (done) {
-    return `<button class="btn btn-outline-success btn-action btn-guide" type="button" disabled>안내완료</button>`;
+    return `<button class="btn btn-outline-success btn-action btn-guide" type="button" disabled>방문완료</button>`;
   }
   if (due) {
-    return `<button class="btn btn-outline-primary btn-action btn-guide" type="button">수리안내</button>`;
+    return `<button class="btn btn-outline-primary btn-action btn-guide" type="button">방문확인</button>`;
   }
   return `<button class="btn btn-outline-secondary btn-action btn-guide" type="button" disabled>대기중</button>`;
 }
