@@ -157,6 +157,7 @@ export function bindEvents() {
   bindTableEvents();
   bindExcelEvents();
   bindLogout();
+  bindPhoneAutoHyphen();
 
   // ✅ 관리자 버튼은 records에서 처리하지 않음 (a href="/admin" 링크로 이동)
   // => records.html에서 <a id="btnAdmin" href="/admin" ...> 로만 두면 끝
@@ -181,4 +182,43 @@ function bindLogout() {
 
     location.href = "/";
   });
+}
+
+
+// ✅ 핸드폰번호 - 자동(Records 페이지 전용)
+function formatPhoneKR(value) {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
+
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return digits.replace(/(\d{3})(\d+)/, "$1-$2");
+  return digits.replace(/(\d{3})(\d{4})(\d+)/, "$1-$2-$3");
+}
+
+function bindPhoneAutoHyphen() {
+  // input 이벤트는 버블링 되므로 모달이 나중에 떠도 적용됨
+  document.addEventListener("input", (e) => {
+    const el = e.target;
+    if (!(el instanceof HTMLInputElement)) return;
+    if (el.name !== "phone") return; // ✅ name="phone" 인 것만
+
+    const before = el.value;
+    const pos = el.selectionStart ?? before.length;
+
+    el.value = formatPhoneKR(before);
+
+    const diff = el.value.length - before.length;
+    try { el.setSelectionRange(pos + diff, pos + diff); } catch (_) {}
+  });
+
+  // blur 시 한 번 더 정리 (붙여넣기/자동완성)
+  document.addEventListener(
+    "blur",
+    (e) => {
+      const el = e.target;
+      if (el instanceof HTMLInputElement && el.name === "phone") {
+        el.value = formatPhoneKR(el.value);
+      }
+    },
+    true
+  );
 }

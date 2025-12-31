@@ -287,10 +287,10 @@ document.addEventListener("DOMContentLoaded", () => {
   window.NAVI.bindRegister();
 
   // ✅ 아이디 입력은 항상 대문자
-  toUpperInput(document.querySelector('input[name="login_id"]'));   // 로그인/회원가입 공통
-  toUpperInput(document.querySelector("#resetLoginId"));            // 비번찾기
-  // (아이디찾기는 이메일이라면 굳이 안해도 됨)
+  toUpperInput(document.querySelector('input[name="login_id"]')); // 로그인/회원가입 공통
+  toUpperInput(document.querySelector("#resetLoginId"));          // 비번찾기
 
+  // ✅ 버튼 클릭
   document.addEventListener("click", (e) => {
     if (e.target.closest("#btnFindId")) onFindId();
     if (e.target.closest("#btnResetPw")) onResetPw();
@@ -298,3 +298,71 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+// ✅ 핸드폰번호 - 자동
+function formatPhoneKR(value) {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
+
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return digits.replace(/(\d{3})(\d+)/, "$1-$2");
+  return digits.replace(/(\d{3})(\d{4})(\d+)/, "$1-$2-$3");
+}
+
+// 모든 name="phone" 입력에 적용 (모달 포함)
+document.addEventListener("input", (e) => {
+  const el = e.target;
+  if (!(el instanceof HTMLInputElement)) return;
+  if (el.name !== "phone") return;
+
+  const before = el.value;
+  const pos = el.selectionStart ?? before.length;
+
+  el.value = formatPhoneKR(before);
+
+  const diff = el.value.length - before.length;
+  try { el.setSelectionRange(pos + diff, pos + diff); } catch (_) {}
+});
+
+// blur 시 한번 더 정리
+document.addEventListener("blur", (e) => {
+  const el = e.target;
+  if (el instanceof HTMLInputElement && el.name === "phone") {
+    el.value = formatPhoneKR(el.value);
+  }
+}, true);
+
+const { normalizePhoneKR } = require("../utils/phone");
+
+router.post("/register", async (req, res) => {
+  try {
+    let { login_id, password, name, phone, email } = req.body || {};
+
+    const norm_id = normLoginId(login_id);
+
+    // ✅ 전화번호 정규화 + 검증
+    const normPhone = phone ? normalizePhoneKR(phone) : null;
+    if (phone && !normPhone) {
+      return res.status(400).json({
+        message: "휴대폰 번호 형식이 올바르지 않습니다. (예: 010-1234-5678)",
+      });
+    }
+
+    const pw_hash = await bcrypt.hash(password, 10);
+    const user_id = "U" + Date.now();
+
+    const r = await pool.query(
+      `
+      insert into app_users
+        (user_id, login_id, pw_hash, name, phone, email, joined_at, paid_until, is_active)
+      values
+        ($1,$2,$3,$4,$5,$6, current_date, (current_date + interval '30 days')::date, true)
+      returning id
+      `,
+      [user_id, norm_id, pw_hash, name, normPhone, email || null]
+    );
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: e.message });
+  }
+});

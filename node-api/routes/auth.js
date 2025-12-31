@@ -19,6 +19,21 @@ function formatYMD(date) {
   return `${y}-${m}-${day}`;
 }
 
+function normalizePhoneKR(input) {
+  if (!input) return null;
+  const digits = String(input).replace(/\D/g, "");
+
+  // 휴대폰만 허용: 010/011/016/017/018/019 + 총 10~11자리 패턴
+  if (!/^01[016789]\d{7,8}$/.test(digits)) return null;
+
+  const d = digits.slice(0, 11);
+
+  // 010-1234-5678로 통일 (10자리면 010-123-4567 같은 케이스는 정책상 막는게 깔끔)
+  if (d.length !== 11) return null;
+
+  return d.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+}
+
 /**
  * app_users (스샷 기준)
  * - id bigserial
@@ -42,18 +57,26 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ message: "비밀번호는 8자 이상" });
     }
 
-    const pw_hash = await bcrypt.hash(password, 10);
+    // ✅ 여기 추가: 전화번호 검증 + 저장형식 통일(010-1234-5678)
+    const normPhone = phone ? normalizePhoneKR(phone) : null;
+    if (phone && !normPhone) {
+      return res.status(400).json({
+        message: "휴대폰 번호 형식이 올바르지 않습니다. (예: 010-1234-5678)",
+      });
+    }
 
-    // ✅ user_id NOT NULL 대응 (충분히 유니크)
+    const pw_hash = await bcrypt.hash(password, 10);
     const user_id = "U" + Date.now();
 
-    // ✅ 회원가입 insert
     const r = await pool.query(
-    `insert into app_users (user_id, login_id, pw_hash, name, phone, email, joined_at, last_payment_at, paid_until, is_active)
-    values ($1,$2,$3,$4,$5,$6, CURRENT_DATE, CURRENT_DATE, (CURRENT_DATE + INTERVAL '30 days')::date, true)
-    returning id, user_id, login_id, name, joined_at, paid_until`,
-    [user_id, norm_id, pw_hash, name, phone || null, email || null]
-  );
+      `insert into app_users
+        (user_id, login_id, pw_hash, name, phone, email, joined_at, last_payment_at, paid_until, is_active)
+       values
+        ($1,$2,$3,$4,$5,$6, CURRENT_DATE, CURRENT_DATE, (CURRENT_DATE + INTERVAL '30 days')::date, true)
+       returning id, user_id, login_id, name, joined_at, paid_until`,
+      // ✅ phone 대신 normPhone 저장
+      [user_id, norm_id, pw_hash, name, normPhone, email || null]
+    );
 
     return res.json({ ok: true, user: r.rows[0] });
   } catch (e) {
@@ -193,6 +216,14 @@ router.patch("/me/profile", async (req, res) => {
     const { name, phone, email } = req.body || {};
     if (!name) return res.status(400).json({ message: "이름은 필수입니다." });
 
+    // ✅ 여기 추가: 전화번호 검증 + 통일
+    const normPhone = phone ? normalizePhoneKR(phone) : null;
+    if (phone && !normPhone) {
+      return res.status(400).json({
+        message: "휴대폰 번호 형식이 올바르지 않습니다. (예: 010-1234-5678)",
+      });
+    }
+
     const r = await pool.query(
       `
       update app_users
@@ -204,10 +235,11 @@ router.patch("/me/profile", async (req, res) => {
       where id = $4
       returning id, login_id, name, phone, email, role
       `,
-      [name, phone || null, email || null, req.session.user.id]
+      // ✅ phone 대신 normPhone 저장
+      [name, normPhone, email || null, req.session.user.id]
     );
 
-req.session.user.name = r.rows[0].name;
+    req.session.user.name = r.rows[0].name;
 
     res.json({ ok: true, user: r.rows[0] });
   } catch (e) {

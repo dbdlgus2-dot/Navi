@@ -82,3 +82,14 @@ export function normalizeRow(r = {}) {
     guide_done_at: r.guide_done_at || null,
   };
 }
+
+export function normalizePhoneKR(input) {
+  if (!input) return null;
+
+  const digits = String(input).replace(/\D/g, "");
+
+  if (!/^01[016789]\d{7,8}$/.test(digits)) return null;
+  if (digits.length !== 11) return null;
+
+  return digits.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+}
