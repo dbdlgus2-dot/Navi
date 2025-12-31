@@ -14,12 +14,6 @@ function bindSearchEvents() {
   $("#dateFrom")?.addEventListener("change", load);
   $("#dateTo")?.addEventListener("change", load);
 
-  $("#onlySafe")?.addEventListener("change", load);
-  $("#onlyRevisit")?.addEventListener("change", load);
-  $("#onlyGuide")?.addEventListener("change", load);
-  $("#onlyNew")?.addEventListener("change", load);
-  $("#repair")?.addEventListener("change", load);
-
   $("#q")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -27,16 +21,19 @@ function bindSearchEvents() {
     }
   });
 
-  // ✅ 체크박스 하나만 선택(필요하면 유지)
-  document.querySelectorAll(".filter-check").forEach((cb) => {
-    cb.addEventListener("change", () => {
-      if (!cb.checked) return;
+// ✅ 체크박스 1개만 선택(라디오처럼)
+document.querySelectorAll(".filter-check").forEach((cb) => {
+  cb.addEventListener("change", () => {
+    if (cb.checked) {
+      // 체크되면 나머지는 모두 해제
       document.querySelectorAll(".filter-check").forEach((other) => {
         if (other !== cb) other.checked = false;
       });
-      load();
-    });
+    }
+    // 체크/해제 모두 load
+    load();
   });
+});
 }
 
 function bindModalEvents() {

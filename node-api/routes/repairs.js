@@ -17,8 +17,7 @@ router.get("/", async (req, res) => {
   try {
     const appUserId = req.session.user.id;
 
-    // ✅ 프론트에서 맞춰서 보낼 파라미터들
-    const { from, to, q, safe, revisit, new: isNew, guide ,repair} = req.query;
+    const { from, to, q, safe, revisit, new: isNew, guide, repair } = req.query;
 
     let sql = `
       select
@@ -37,8 +36,13 @@ router.get("/", async (req, res) => {
         note,
         customer_type,
         to_char(guide_date, 'YYYY-MM-DD') as guide_date,
-        guide_done,
-        guide_done_at
+        coalesce(guide_done, false) as guide_done,
+        guide_done_at,
+        (
+          customer_type = '안심회원'
+          AND coalesce(guide_done, false) = false
+          AND current_date >= (coalesce(guide_date, repair_date) + interval '90 days')
+        ) as guide_due
       from repair_payments
       where app_user_id = $1
     `;
@@ -53,20 +57,19 @@ router.get("/", async (req, res) => {
       sql += ` and (customer_name ilike $${params.length} or customer_phone ilike $${params.length})`;
     }
 
-    // ✅ 체크박스 필터: customer_type 기준
     if (safe === "1")    sql += ` and customer_type = '안심회원'`;
     if (revisit === "1") sql += ` and customer_type = '재방문'`;
     if (isNew === "1")   sql += ` and customer_type = '신규'`;
     if (repair === "1")  sql += ` and customer_type = '수리'`;
-  
 
-    // ✅ 수리안내 대상: 안심회원 + 아직 안내 전(딱 1번 정책)
-if (guide === "1") {
-  sql += `
-    and customer_type = '안심회원'
-    and guide_done = false
-  `;
-}
+    // ✅ 안내대상(90일 경과 + 미완료 + 안심회원)
+    if (guide === "1") {
+      sql += `
+        and customer_type = '안심회원'
+        and coalesce(guide_done, false) = false
+        and current_date >= (coalesce(guide_date, repair_date) + interval '90 days')
+      `;
+    }
 
     sql += ` order by repair_date desc, id desc`;
 
@@ -92,6 +95,7 @@ if (guide === "1") {
       guide_date: x.guide_date || "",
       guide_done: x.guide_done === true || x.guide_done === "t",
       guide_done_at: x.guide_done_at || null,
+      guide_due: x.guide_due === true || x.guide_due === "t",   // ✅ 추가
     }));
 
     res.json(out);

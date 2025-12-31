@@ -27,13 +27,18 @@ function guideActionCell(r) {
   const done = asBool(r.guide_done);
   const due  = asBool(r.guide_due);
 
+  // ✅ 완료면 버튼 말고 배지(클릭 불가)
   if (done) {
-    return `<button class="btn btn-outline-success btn-action btn-guide" type="button" disabled>방문완료</button>`;
+    return `<span class="badge bg-success">방문완료</span>`;
   }
+
+  // ✅ 대상이면 클릭 가능한 버튼(여기만 btn-guide 유지)
   if (due) {
     return `<button class="btn btn-outline-primary btn-action btn-guide" type="button">방문확인</button>`;
   }
-  return `<button class="btn btn-outline-secondary btn-action btn-guide" type="button" disabled>대기중</button>`;
+
+  // ✅ 대기중도 버튼 말고 텍스트/배지(클릭 불가)
+  return `<span class="badge bg-secondary">대기중</span>`;
 }
 
 export function renderRows(rows) {
