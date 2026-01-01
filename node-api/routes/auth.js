@@ -18,11 +18,15 @@ function formatYMD(date) {
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
+// ✅ 영문 숫자만 
+function isValidLoginId(id) {
+  // 대문자 기준으로 검증 (이미 normLoginId에서 대문자로 바뀜)
+  return /^[A-Z0-9]{4,20}$/.test(id);
+}
 
 function normalizePhoneKR(input) {
   if (!input) return null;
   const digits = String(input).replace(/\D/g, "");
-
   // 휴대폰만 허용: 010/011/016/017/018/019 + 총 10~11자리 패턴
   if (!/^01[016789]\d{7,8}$/.test(digits)) return null;
 
@@ -50,6 +54,11 @@ router.post("/register", async (req, res) => {
     const { login_id, password, name, phone, email } = req.body || {};
     const norm_id = normLoginId(login_id);
 
+    if (!isValidLoginId(norm_id)) {
+    return res.status(400).json({
+      message: "로그인 ID는 영문/숫자만 가능하며 4~20자입니다. (예: ABC123)",
+    });
+    }
     if (!norm_id || !password || !name) {
       return res.status(400).json({ message: "필수값 누락(login_id/password/name)" });
     }
@@ -60,9 +69,7 @@ router.post("/register", async (req, res) => {
     // ✅ 여기 추가: 전화번호 검증 + 저장형식 통일(010-1234-5678)
     const normPhone = phone ? normalizePhoneKR(phone) : null;
     if (phone && !normPhone) {
-      return res.status(400).json({
-        message: "휴대폰 번호 형식이 올바르지 않습니다. (예: 010-1234-5678)",
-      });
+      return res.status(400).json({message: "휴대폰 번호 형식이 올바르지 않습니다. (예: 010-1234-5678)",});
     }
 
     const pw_hash = await bcrypt.hash(password, 10);
@@ -219,9 +226,7 @@ router.patch("/me/profile", async (req, res) => {
     // ✅ 여기 추가: 전화번호 검증 + 통일
     const normPhone = phone ? normalizePhoneKR(phone) : null;
     if (phone && !normPhone) {
-      return res.status(400).json({
-        message: "휴대폰 번호 형식이 올바르지 않습니다. (예: 010-1234-5678)",
-      });
+      return res.status(400).json({message: "휴대폰 번호 형식이 올바르지 않습니다. (예: 010-1234-5678)",});
     }
 
     const r = await pool.query(

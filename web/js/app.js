@@ -108,6 +108,11 @@ window.NAVI.bindLogin = function () {
     const login_id = (form.login_id?.value || "").trim().toUpperCase();
     const password = form.password?.value || "";
 
+    if (!/^[A-Z0-9]{4,20}$/.test(login_id)) {
+    if (msg) msg.textContent = "로그인 ID는 영문/숫자 4~20자만 가능합니다.";
+    return;
+  }
+
     try {
       const res = await fetch("/api/login", {
         method: "POST",
@@ -329,40 +334,3 @@ document.addEventListener("blur", (e) => {
     el.value = formatPhoneKR(el.value);
   }
 }, true);
-
-const { normalizePhoneKR } = require("../utils/phone");
-
-router.post("/register", async (req, res) => {
-  try {
-    let { login_id, password, name, phone, email } = req.body || {};
-
-    const norm_id = normLoginId(login_id);
-
-    // ✅ 전화번호 정규화 + 검증
-    const normPhone = phone ? normalizePhoneKR(phone) : null;
-    if (phone && !normPhone) {
-      return res.status(400).json({
-        message: "휴대폰 번호 형식이 올바르지 않습니다. (예: 010-1234-5678)",
-      });
-    }
-
-    const pw_hash = await bcrypt.hash(password, 10);
-    const user_id = "U" + Date.now();
-
-    const r = await pool.query(
-      `
-      insert into app_users
-        (user_id, login_id, pw_hash, name, phone, email, joined_at, paid_until, is_active)
-      values
-        ($1,$2,$3,$4,$5,$6, current_date, (current_date + interval '30 days')::date, true)
-      returning id
-      `,
-      [user_id, norm_id, pw_hash, name, normPhone, email || null]
-    );
-
-    res.json({ ok: true });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ message: e.message });
-  }
-});

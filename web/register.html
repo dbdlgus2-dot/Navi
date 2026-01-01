@@ -19,7 +19,7 @@
 
       <form id="registerForm" class="form">
         <label>로그인 ID</label>
-        <input class="input" name="login_id" placeholder="예) shop01" required />
+        <input class="input" name="login_id" required minlength="4" maxlength="20" pattern="[A-Za-z0-9]{4,20}" inputmode="latin" autocomplete="username" placeholder="영문/숫자 4~20자 (예: ABC123)"/>
 
         <label>비밀번호</label>
         <input class="input" type="password" name="password" placeholder="8자 이상" required />

@@ -119,29 +119,29 @@ function bindExcelEvents() {
       차량: r.car || "",
       수리내용: r.desc || "",
       상태: r.customer_type || "",
-      수리안내일: r.guide_date || "",
+      방문일: r.guide_date || "",          // ✅ 이 줄 추가
       안내상태: r.guide_done ? "안내완료" : "미안내",
     }));
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(data);
 
-    ws["!cols"] = [
-      { wch: 6 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 16 },
-      { wch: 16 },
-      { wch: 8 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 14 },
-      { wch: 12 },
-      { wch: 30 },
-      { wch: 10 },
-      { wch: 12 },
-      { wch: 10 },
+      ws["!cols"] = [
+      { wch: 6 },   // No
+      { wch: 12 },  // 날짜
+      { wch: 10 },  // 성명
+      { wch: 16 },  // 전화번호
+      { wch: 16 },  // 카드사
+      { wch: 8 },   // 할부
+      { wch: 12 },  // 카드
+      { wch: 12 },  // 현금
+      { wch: 12 },  // 입금
+      { wch: 14 },  // 제품
+      { wch: 12 },  // 차량
+      { wch: 30 },  // 수리내용
+      { wch: 10 },  // 상태
+      { wch: 12 },  // 방문일 ✅ 추가
+      { wch: 10 },  // 안내상태
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, "현재조회");
