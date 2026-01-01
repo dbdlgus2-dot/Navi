@@ -90,7 +90,7 @@ async function changePassword() {
 
   if (!cur || !nw) throw new Error("현재/새 비밀번호를 입력해주세요.");
 
-  const pwRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,20}$/;
+  const pwRegex =/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,20}$/;
   if (!pwRegex.test(nw)) {
     throw new Error("비밀번호는 8~20자이며 영문 대/소문자, 숫자, 특수문자를 모두 포함해야 합니다.");
   }

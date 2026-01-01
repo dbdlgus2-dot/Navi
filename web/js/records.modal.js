@@ -1,6 +1,6 @@
 // web/js/records.modal.js
 import { $, num, toYMD } from "./util.js";
-import "./common.bind.js";   // ✅ 이 한 줄이 제일 깔끔
+import "./common.bind.js";
 
 let lastInputDate = "";
 
@@ -8,6 +8,14 @@ function getModal() {
   const el = $("#editModal");
   if (!el) return null;
   return bootstrap.Modal.getOrCreateInstance(el);
+}
+
+// ✅ 모달에서도 서버 정책과 동일하게 통일
+function normalizePhoneKR(input) {
+  if (!input) return "";
+  const digits = String(input).replace(/\D/g, "");
+  if (!/^01[016789]\d{8}$/.test(digits)) return "";
+  return digits.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
 }
 
 export function setModal(mode, row = {}) {
@@ -24,18 +32,21 @@ export function setModal(mode, row = {}) {
 
   f.date.value = baseDate;
 
-  // 수정일 때 날짜 변경 불가
   if (mode === "edit") f.date.setAttribute("disabled", "disabled");
   else f.date.removeAttribute("disabled");
 
   f.name.value = row.name ?? "";
   f.phone.value = row.phone ?? "";
+
   f.pay_card.value = row.pay_card ? String(row.pay_card) : "";
   f.pay_cash.value = row.pay_cash ? String(row.pay_cash) : "";
   f.pay_bank.value = row.pay_bank ? String(row.pay_bank) : "";
   f.product.value = row.product ?? "";
   f.car.value = row.car ?? "";
-  f.customer_type.value = row.customer_type ?? "수리";
+
+  // ✅ new 기본값 "신규"
+  f.customer_type.value = row.customer_type ?? (mode === "new" ? "신규" : "수리");
+
   f.desc.value = row.desc ?? "";
 
   if (f.card_company) f.card_company.value = row.card_company ?? "";
@@ -62,11 +73,18 @@ export function getPayloadFromModal() {
     throw new Error(`날짜 형식이 이상함: ${rawDate} (YYYY-MM-DD 여야 함)`);
   }
 
+  const rawPhone = (f.phone.value || "").trim();
+  const normPhone = rawPhone ? normalizePhoneKR(rawPhone) : "";
+
+  if (rawPhone && !normPhone) {
+    throw new Error("휴대폰 번호 형식이 올바르지 않습니다. (예: 010-1234-5678)");
+  }
+
   const payload = {
     id,
     date: rawDate,
     name: (f.name.value || "").trim(),
-    phone: (f.phone.value || "").trim(),
+    phone: normPhone,
     pay_card: num(f.pay_card.value),
     pay_cash: num(f.pay_cash.value),
     pay_bank: num(f.pay_bank.value),
