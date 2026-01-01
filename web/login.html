@@ -25,7 +25,16 @@
       <form id="loginForm" class="form">
         <div class="field">
           <label>로그인 ID</label>
-          <input class="input" name="login_id" placeholder="예) test@naver.com" autocomplete="username" required />
+          <input class="input"
+                name="login_id"
+                required minlength="4" maxlength="20"
+                pattern="^[A-Za-z0-9]{4,20}$"
+                inputmode="latin"
+                autocomplete="username"
+                autocapitalize="characters"
+                spellcheck="false"
+                placeholder="영문/숫자 4~20자 (예: ABC123)"
+              />
         </div>
 
         <div class="field">

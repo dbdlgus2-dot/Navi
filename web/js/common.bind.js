@@ -1,26 +1,36 @@
 // /js/common.bind.js
 (() => {
   // ✅ login_id: 무조건 대문자 (id/name 둘 다 커버)
-  document.addEventListener("input", (e) => {
-    const el = e.target;
-    if (!(el instanceof HTMLInputElement)) return;
+// login_id 공통 처리 (한글 차단 + 대문자)
+document.addEventListener("input", (e) => {
+  const el = e.target;
+  if (!(el instanceof HTMLInputElement)) return;
 
-    const isLogin =
-      el.name === "login_id" ||
-      el.id === "login_id" ||
-      el.id === "resetLoginId" ||
-      el.dataset.upper === "1";
+  const isLoginId =
+    el.name === "login_id" ||
+    el.id === "login_id" ||
+    el.id === "resetLoginId" ||
+    el.dataset.upper === "1";
 
-    if (!isLogin) return;
+  if (!isLoginId) return;
 
-    const v = el.value;
-    const up = v.toUpperCase();
-    if (v !== up) {
-      const pos = el.selectionStart ?? up.length;
-      el.value = up;
-      try { el.setSelectionRange(pos, pos); } catch (_) {}
-    }
-  });
+  let v = el.value;
+
+  // ❌ 한글 제거
+  v = v.replace(/[ㄱ-ㅎㅏ-ㅣ가-힣]/g, "");
+
+  // ❌ 영문/숫자 외 제거
+  v = v.replace(/[^a-zA-Z0-9]/g, "");
+
+  // ✅ 대문자
+  v = v.toUpperCase();
+
+  if (el.value !== v) {
+    const pos = el.selectionStart ?? v.length;
+    el.value = v;
+    try { el.setSelectionRange(pos, pos); } catch (_) {}
+  }
+});
 
   // ✅ phone: 자동 하이픈 (name="phone" or id="mePhone" 등 커버)
   function formatPhoneKR(value) {
