@@ -1,14 +1,5 @@
 window.NAVI = window.NAVI || {};
 
-function toUpperInput(el) {
-  if (!el) return;
-  el.addEventListener("input", () => {
-    const v = el.value;
-    const up = v.toUpperCase();
-    if (v !== up) el.value = up;
-  });
-}
-
 // ❗ 여기서만 선언
 const $ = (sel) => document.querySelector(sel);
 
@@ -151,10 +142,22 @@ window.NAVI.bindRegister = function () {
     const phone = form.phone.value.trim();
     const email = form.email.value.trim();
 
-    if (password.length < 8) {
-      if (msg) msg.textContent = "비밀번호는 8자 이상 입력 해주세요.";
+    // ✅ login_id 프론트 검증 (서버에도 이미 있으면 이건 UX용)
+    if (!/^[A-Z0-9]{4,20}$/.test(login_id)) {
+      if (msg) msg.textContent = "로그인 ID는 영문/숫자 4~20자만 가능합니다.";
       return;
     }
+
+    // ✅ 비밀번호 정규식 (마이페이지랑 동일하게)
+    const pwRegex =
+      /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,20}$/;
+
+    if (!pwRegex.test(password)) {
+      if (msg) msg.textContent =
+        "비밀번호는 8~20자이며 영문 대/소문자, 숫자, 특수문자를 모두 포함해야 합니다.";
+      return;
+    }
+
     if (password !== password_confirm) {
       if (msg) msg.textContent = "비밀번호가 서로 다릅니다.";
       return;
@@ -291,46 +294,9 @@ document.addEventListener("DOMContentLoaded", () => {
   window.NAVI.bindLogin();
   window.NAVI.bindRegister();
 
-  // ✅ 아이디 입력은 항상 대문자
-  toUpperInput(document.querySelector('input[name="login_id"]')); // 로그인/회원가입 공통
-  toUpperInput(document.querySelector("#resetLoginId"));          // 비번찾기
-
   // ✅ 버튼 클릭
   document.addEventListener("click", (e) => {
     if (e.target.closest("#btnFindId")) onFindId();
     if (e.target.closest("#btnResetPw")) onResetPw();
   });
 });
-
-
-// ✅ 핸드폰번호 - 자동
-function formatPhoneKR(value) {
-  const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
-
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 7) return digits.replace(/(\d{3})(\d+)/, "$1-$2");
-  return digits.replace(/(\d{3})(\d{4})(\d+)/, "$1-$2-$3");
-}
-
-// 모든 name="phone" 입력에 적용 (모달 포함)
-document.addEventListener("input", (e) => {
-  const el = e.target;
-  if (!(el instanceof HTMLInputElement)) return;
-  if (el.name !== "phone") return;
-
-  const before = el.value;
-  const pos = el.selectionStart ?? before.length;
-
-  el.value = formatPhoneKR(before);
-
-  const diff = el.value.length - before.length;
-  try { el.setSelectionRange(pos + diff, pos + diff); } catch (_) {}
-});
-
-// blur 시 한번 더 정리
-document.addEventListener("blur", (e) => {
-  const el = e.target;
-  if (el instanceof HTMLInputElement && el.name === "phone") {
-    el.value = formatPhoneKR(el.value);
-  }
-}, true);

@@ -155,7 +155,7 @@ function renderDetail(u) {
         <div class="row g-2 mt-2">
         <div class="col-md-6">
             <label class="form-label">로그인ID</label>
-            <input id="adminLoginId" class="form-control" value="${u.login_id || ""}" />
+            <input id="adminLoginId" data-upper="1" class="form-control" value="${u.login_id || ""}" />
         </div>
 
         <div class="col-md-6">
@@ -261,7 +261,7 @@ async function onSave() {
     });
 
     if (!r) return;
-
+    if (!confirm("저장할까요?")) return;
     alert("저장 완료");
     $("#adminPassword").value = "";
     await loadUsers();

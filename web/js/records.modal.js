@@ -1,5 +1,6 @@
 // web/js/records.modal.js
 import { $, num, toYMD } from "./util.js";
+import "./common.bind.js";   // ✅ 이 한 줄이 제일 깔끔
 
 let lastInputDate = "";
 
