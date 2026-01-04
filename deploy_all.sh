@@ -6,11 +6,13 @@ REPO_DIR="$HOME/Navi"
 BRANCH="main"
 
 GITHUB_KEY="$HOME/.ssh/id_ed25519_github"
+
 SERVER_USER="opc"
-SERVER_HOST="161.33.167.129"
+# ✅ 지금 살아있는 인스턴스 공인IP로 수정
+SERVER_HOST="130.162.142.45"
 SERVER_KEY="$HOME/.ssh/ssh-key-2025-12-19.key"
 
-SERVER_SSH_OPTS=(-i "$SERVER_KEY" -o IdentitiesOnly=yes)
+SERVER_SSH_OPTS=(-i "$SERVER_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=7)
 
 cd "$REPO_DIR"
 
@@ -25,7 +27,7 @@ if ! git diff --quiet || [[ -n "$(git status --porcelain)" ]]; then
   git add -A
   git commit -m "chore: deploy $(date '+%Y-%m-%d %H:%M:%S')" || true
 
-  GIT_SSH_COMMAND="ssh -i $GITHUB_KEY -o IdentitiesOnly=yes" \
+  GIT_SSH_COMMAND="ssh -i \"$GITHUB_KEY\" -o IdentitiesOnly=yes" \
     git push origin "$BRANCH"
 else
   echo "ℹ️ 변경 없음"
