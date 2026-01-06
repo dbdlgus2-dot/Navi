@@ -135,3 +135,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     alert(e.message || "마이페이지 로딩 실패");
   }
 });
+
+function forceClearPwFields() {
+  const ids = ["#curPw", "#newPw", "#newPw2"];
+  ids.forEach((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return;
+    el.value = "";
+    el.setAttribute("value", ""); // 혹시 value attr도 박혀있으면 제거
+  });
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  forceClearPwFields();
+
+  // 브라우저가 늦게 자동완성하는 케이스 대응
+  setTimeout(forceClearPwFields, 0);
+  setTimeout(forceClearPwFields, 300);
+
+  // 포커스 받을 때도 자동완성 들어오면 즉시 제거
+  document.querySelector("#curPw")?.addEventListener("focus", forceClearPwFields);
+
+  // ... 기존 로직
+});
