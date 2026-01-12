@@ -183,7 +183,10 @@ router.get("/me", (req, res) => {
 
   res.json({
     id: req.session.user.id,
-    role: req.session.user.role, // ADMIN / USER
+    name: req.session.user.name, // 이름이 있어야 노란 바에 표시됩니다
+    role: req.session.user.role, 
+    // ✅ 세션에 저장된 대리 로그인 여부를 프론트에 알려줌
+    isImpersonated: !!req.session.user.isImpersonated 
   });
 });
 
